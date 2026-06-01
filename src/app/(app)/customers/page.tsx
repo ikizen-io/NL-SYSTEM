@@ -10,6 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Page, PageActions, PageDescription, PageHeader, PageTitle } from "@/components/ui/page";
 import { Table, TBody, TD, TH, THead } from "@/components/ui/table";
 
+export const dynamic = "force-dynamic";
+
 function buildCustomerStats(
   customers: Awaited<ReturnType<typeof loadCustomers>>,
   q: string,

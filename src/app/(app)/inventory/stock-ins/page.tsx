@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Page, PageActions, PageDescription, PageHeader, PageTitle } from "@/components/ui/page";
 import { Table, TBody, TD, TH, THead } from "@/components/ui/table";
 
+export const dynamic = "force-dynamic";
+
 export default async function StockInsPage({
   searchParams,
 }: {

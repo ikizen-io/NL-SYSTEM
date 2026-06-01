@@ -10,6 +10,8 @@ import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Page, PageDescription, PageHeader, PageTitle } from "@/components/ui/page";
 import { Table, TBody, THead, TD, TH } from "@/components/ui/table";
 
+export const dynamic = "force-dynamic";
+
 type BrandAgg = {
   brand: string;
   salesCount: number;

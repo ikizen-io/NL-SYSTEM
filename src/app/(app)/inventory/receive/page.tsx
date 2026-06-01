@@ -8,6 +8,8 @@ import { formatLkr } from "@/lib/format";
 import { effectiveUnitCost } from "@/lib/costing";
 import { ReceivePurchaseForm } from "./ReceivePurchaseForm";
 
+export const dynamic = "force-dynamic";
+
 function currentStock(variant: {
   stockIns: { qty: number }[];
   adjustments: { qtyDelta: number }[];

@@ -7,6 +7,8 @@ import { Table, TBody, THead, TD, TH } from "@/components/ui/table";
 import { SupplierAddForm } from "./SupplierAddForm";
 import { SupplierRow } from "./SupplierRow";
 
+export const dynamic = "force-dynamic";
+
 export default async function SuppliersPage() {
   const suppliers = await prisma.supplier.findMany({
     include: { _count: { select: { stockIns: true } } },

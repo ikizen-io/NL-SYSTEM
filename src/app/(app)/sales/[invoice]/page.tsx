@@ -20,6 +20,8 @@ import { PaymentManager } from "./PaymentManager";
 import { ReturnExchangeForm } from "./ReturnExchangeForm";
 import { ReturnsHistory } from "./ReturnsHistory";
 
+export const dynamic = "force-dynamic";
+
 export default async function InvoiceDetailPage({
   params,
 }: {

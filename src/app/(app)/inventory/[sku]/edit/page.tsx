@@ -8,6 +8,8 @@ import { Page, PageActions, PageDescription, PageHeader, PageTitle } from "@/com
 import { EditSkuForm } from "./EditSkuForm";
 import { StockInHistory } from "./StockInHistory";
 
+export const dynamic = "force-dynamic";
+
 export default async function EditSkuPage({
   params,
 }: {

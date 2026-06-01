@@ -3,7 +3,7 @@ import { getSessionFromCookie } from "@/lib/auth";
 
 const PUBLIC_PATHS = ["/login", "/api/auth/login", "/api/auth/logout"];
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Allow public paths and static assets through
@@ -21,7 +21,7 @@ export function middleware(request: NextRequest) {
   }
 
   const sessionCookie = request.cookies.get("nl_session")?.value;
-  const user = getSessionFromCookie(sessionCookie);
+  const user = await getSessionFromCookie(sessionCookie);
 
   if (!user) {
     const loginUrl = request.nextUrl.clone();

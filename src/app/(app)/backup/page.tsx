@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getLatestBackupInfo } from "@/lib/backup";
+import { getLatestBackupInfo, isSqliteDatabase } from "@/lib/backup";
 import { exportDatasets } from "@/lib/export-data";
 import { formatLkr } from "@/lib/format";
 import { Alert } from "@/components/ui/alert";
@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Page, PageActions, PageDescription, PageHeader, PageTitle } from "@/components/ui/page";
 import { BackupPanel } from "./BackupPanel";
+
+export const dynamic = "force-dynamic";
 
 const exportLabels: Record<(typeof exportDatasets)[number], string> = {
   variants: "Variants / SKUs (with stock & cost)",
@@ -30,7 +32,8 @@ function daysSince(date: Date) {
 }
 
 export default async function BackupPage() {
-  const latestBackup = await getLatestBackupInfo();
+  const sqliteAvailable = isSqliteDatabase();
+  const latestBackup = sqliteAvailable ? await getLatestBackupInfo() : null;
   const backupAgeDays = latestBackup ? daysSince(latestBackup.mtime) : null;
 
   return (
@@ -39,7 +42,7 @@ export default async function BackupPage() {
         <div>
           <PageTitle>Backup & export</PageTitle>
           <PageDescription>
-            Protect your SQLite data and export CSV snapshots for spreadsheets or
+            Protect your data and export CSV snapshots for spreadsheets or
             external tools.
           </PageDescription>
         </div>
@@ -50,7 +53,12 @@ export default async function BackupPage() {
         </PageActions>
       </PageHeader>
 
-      {!latestBackup ? (
+      {!sqliteAvailable ? (
+        <Alert tone="info">
+          Hosted Postgres backups are managed in Supabase. Use CSV exports below
+          for app-level snapshots.
+        </Alert>
+      ) : !latestBackup ? (
         <Alert tone="warning">
           No local backup found yet in the `backups/` folder. Download or save a
           database copy before major changes.
@@ -74,7 +82,7 @@ export default async function BackupPage() {
           <CardTitle>Database backup</CardTitle>
         </CardHeader>
         <CardContent>
-          <BackupPanel />
+          <BackupPanel sqliteAvailable={sqliteAvailable} />
         </CardContent>
       </Card>
 
@@ -98,9 +106,8 @@ export default async function BackupPage() {
       </Card>
 
       <p className="text-xs text-zinc-500">
-        Restoring from a `.db` backup replaces `prisma/dev.db` while the app is
-        stopped. CSV exports are for analysis — use Import for structured
-        inventory/expense loads.
+        CSV exports are for analysis and spreadsheet backups. For hosted
+        Postgres point-in-time recovery, use Supabase database backups.
       </p>
     </Page>
   );

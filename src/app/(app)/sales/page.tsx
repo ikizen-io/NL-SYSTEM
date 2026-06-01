@@ -26,6 +26,8 @@ import {
 import { Ban, MoreHorizontal, Pencil, Printer } from "lucide-react";
 import { voidInvoice } from "./[invoice]/actions";
 
+export const dynamic = "force-dynamic";
+
 const pageSize = 50;
 
 function availableStock(variant: {

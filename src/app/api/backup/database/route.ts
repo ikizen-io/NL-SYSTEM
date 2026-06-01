@@ -1,8 +1,17 @@
 import { NextResponse } from "next/server";
-import { readDatabaseBytes, resolveDatabasePath } from "@/lib/backup";
+import { isSqliteDatabase, readDatabaseBytes, resolveDatabasePath } from "@/lib/backup";
 
 export async function GET() {
   try {
+    if (!isSqliteDatabase()) {
+      return NextResponse.json(
+        {
+          error:
+            "Raw database downloads are only available for local SQLite. Use CSV exports or Supabase backups for hosted Postgres.",
+        },
+        { status: 400 },
+      );
+    }
     resolveDatabasePath();
     const bytes = await readDatabaseBytes();
     const stamp = new Date().toISOString().slice(0, 10);

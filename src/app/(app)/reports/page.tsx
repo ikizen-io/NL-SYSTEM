@@ -10,6 +10,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Page, PageActions, PageDescription, PageHeader, PageTitle } from "@/components/ui/page";
 import { Table, TBody, TD, TH, THead } from "@/components/ui/table";
 
+export const dynamic = "force-dynamic";
+
 export default async function ReportsPage() {
   const [variants, allIssuedInvoices, expenses] = await Promise.all([
     prisma.variant.findMany({

@@ -6,6 +6,8 @@ import { Page, PageActions, PageDescription, PageHeader, PageTitle } from "@/com
 import { Table, TBody, THead, TD, TH } from "@/components/ui/table";
 import { StockAdjustForm } from "./StockAdjustForm";
 
+export const dynamic = "force-dynamic";
+
 function currentStock(variant: {
   stockIns: { qty: number }[];
   adjustments: { qtyDelta: number }[];

@@ -7,6 +7,8 @@ import { Page, PageActions, PageDescription, PageHeader, PageTitle } from "@/com
 import Link from "next/link";
 import { InventoryTable } from "./InventoryTable";
 
+export const dynamic = "force-dynamic";
+
 async function loadVariants(showArchived: boolean) {
   return prisma.variant.findMany({
     where: showArchived ? undefined : { active: true },

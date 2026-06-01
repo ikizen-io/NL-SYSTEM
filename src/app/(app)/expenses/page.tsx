@@ -5,6 +5,8 @@ import { Page, PageDescription, PageHeader, PageTitle } from "@/components/ui/pa
 import { Table, TBody, THead, TD, TH } from "@/components/ui/table";
 import { ExpenseForm } from "./ExpenseForm";
 
+export const dynamic = "force-dynamic";
+
 export default async function ExpensesPage() {
   const expenses = await prisma.expense.findMany({
     orderBy: { date: "desc" },

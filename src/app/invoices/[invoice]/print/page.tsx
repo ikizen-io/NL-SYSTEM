@@ -5,6 +5,8 @@ import { formatLkr } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
 import { PrintButton } from "./PrintButton";
 
+export const dynamic = "force-dynamic";
+
 function invoiceLookup(invoice: string) {
   const decoded = decodeURIComponent(invoice);
   const legacy = decoded.startsWith("#") ? decoded : `#${decoded}`;

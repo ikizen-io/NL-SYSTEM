@@ -9,6 +9,8 @@ import { Select } from "@/components/ui/select";
 import { Table, TBody, THead, TD, TH } from "@/components/ui/table";
 import { DashboardPresets } from "./DashboardPresets";
 
+export const dynamic = "force-dynamic";
+
 function monthBounds(yyyyMm: string) {
   const [y, m] = yyyyMm.split("-").map((v) => Number(v));
   const start = new Date(Date.UTC(y, m - 1, 1));

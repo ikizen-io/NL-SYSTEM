@@ -5,6 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Page, PageActions, PageDescription, PageHeader, PageTitle } from "@/components/ui/page";
 import { CreateSkuForm } from "./CreateSkuForm";
 
+export const dynamic = "force-dynamic";
+
 export default async function NewSkuPage() {
   const products = await prisma.product.findMany({
     select: { brand: true, category: true },

@@ -6,11 +6,15 @@ import { Button } from "@/components/ui/button";
 import { ActionStateBanner } from "@/components/ui/form-patterns";
 import { saveLocalBackup } from "./actions";
 
-export function BackupPanel() {
+export function BackupPanel({ sqliteAvailable }: { sqliteAvailable: boolean }) {
   const [error, setError] = useState<string>();
   const [pending, setPending] = useState(false);
 
   async function handleSave() {
+    if (!sqliteAvailable) {
+      setError("Local .db backups are only available when DATABASE_URL uses SQLite.");
+      return;
+    }
     setPending(true);
     setError(undefined);
     const result = await saveLocalBackup();
@@ -28,17 +32,19 @@ export function BackupPanel() {
     <div className="space-y-3">
       <ActionStateBanner error={error} />
       <div className="flex flex-wrap gap-2">
-        <Button asChild variant="outline">
-          <a href="/api/backup/database">Download database copy</a>
-        </Button>
-        <Button type="button" onClick={handleSave} disabled={pending}>
+        {sqliteAvailable ? (
+          <Button asChild variant="outline">
+            <a href="/api/backup/database">Download database copy</a>
+          </Button>
+        ) : null}
+        <Button type="button" onClick={handleSave} disabled={pending || !sqliteAvailable}>
           {pending ? "Saving..." : "Save copy to backups folder"}
         </Button>
       </div>
       <p className="text-xs text-zinc-500">
-        Download gives you a `.db` file you can store offline. Save to folder
-        also writes under `backups/` in the project (same as the desktop backup
-        script).
+        {sqliteAvailable
+          ? "Download gives you a `.db` file you can store offline. Save to folder also writes under `backups/` in the project."
+          : "Hosted Postgres backups are managed in Supabase. CSV exports below remain available for spreadsheet snapshots."}
       </p>
     </div>
   );
