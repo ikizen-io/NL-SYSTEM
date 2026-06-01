@@ -5,7 +5,7 @@ const SESSION_MAX_AGE = 60 * 60 * 24 * 30; // 30 days
 const encoder = new TextEncoder();
 
 function getSecret(): string {
-  return process.env.AUTH_SECRET ?? "change-me-in-production";
+  return process.env.AUTH_SECRET || "change-me-in-production";
 }
 
 function bytesToHex(bytes: ArrayBuffer) {
