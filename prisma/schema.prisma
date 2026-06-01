@@ -1,0 +1,274 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum InvoiceStatus {
+  DRAFT
+  ISSUED
+  CANCELLED
+  RETURNED
+}
+
+enum PaymentMethod {
+  BANK
+  CASH
+  COD
+  TRANSFER
+  OTHER
+}
+
+model Product {
+  id        String    @id @default(cuid())
+  brand     String
+  category  String
+  modelName String
+  active    Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  variants  Variant[]
+
+  @@index([brand])
+  @@index([category])
+  @@index([modelName])
+}
+
+model Variant {
+  id          String   @id @default(cuid())
+  productId   String
+  sku         String   @unique
+  sizeLabel   String
+  color       String?
+  targetPrice Int?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  product      Product          @relation(fields: [productId], references: [id], onDelete: Cascade)
+  stockIns     StockIn[]
+  adjustments  StockAdjustment[]
+  invoiceItems InvoiceItem[]
+  exchangeItems ExchangeItem[]
+
+  @@index([productId])
+  @@index([sku])
+}
+
+model Customer {
+  id              String    @id @default(cuid())
+  name            String    @unique
+  phone           String?
+  instagramHandle String?
+  address         String?
+  notes           String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  invoices        Invoice[]
+
+}
+
+model Invoice {
+  id         String        @id @default(cuid())
+  invoiceNo  String        @unique
+  issuedDate DateTime      @default(now())
+  status     InvoiceStatus @default(ISSUED)
+  shippingCharge Int       @default(0)
+  discountAmount Int       @default(0)
+
+  customerId String?
+  customer   Customer?     @relation(fields: [customerId], references: [id], onDelete: SetNull)
+
+  items      InvoiceItem[]
+  payments   Payment[]
+  returnRecords ReturnRecord[]
+
+  notes      String?
+
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  @@index([issuedDate])
+  @@index([status])
+  @@index([customerId])
+}
+
+model InvoiceItem {
+  id             String   @id @default(cuid())
+  invoiceId      String
+  variantId      String
+  qty            Int
+  unitPrice      Int
+  unitCostAtSale Int
+  notes          String?
+
+  invoice        Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  variant        Variant  @relation(fields: [variantId], references: [id], onDelete: Restrict)
+  returnItems    ReturnItem[]
+  exchangeItems  ExchangeItem[]
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([invoiceId])
+  @@index([variantId])
+}
+
+model Payment {
+  id         String        @id @default(cuid())
+  invoiceId  String
+  date       DateTime      @default(now())
+  method     PaymentMethod
+  amount     Int
+  reference  String?
+
+  invoice    Invoice       @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  @@index([invoiceId])
+  @@index([date])
+  @@index([method])
+}
+
+model StockIn {
+  id           String   @id @default(cuid())
+  variantId    String
+  supplierId   String?
+  receivedDate DateTime @default(now())
+  qty          Int
+  unitCost     Int
+  supplier     String?  // supplier name snapshot for historical reference
+  purchaseRef  String?
+  extraCost    Int?      // shipping/import/fees for this stock-in batch
+  notes        String?
+
+  variant      Variant  @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  supplierRecord Supplier? @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([variantId])
+  @@index([supplierId])
+  @@index([receivedDate])
+}
+
+model Supplier {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  active    Boolean   @default(true)
+  notes     String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  stockIns  StockIn[]
+
+  @@index([active])
+  @@index([name])
+}
+
+model StockAdjustment {
+  id        String   @id @default(cuid())
+  variantId String
+  date      DateTime @default(now())
+  qtyDelta  Int
+  reason    String
+  notes     String?
+
+  variant   Variant  @relation(fields: [variantId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([variantId])
+  @@index([date])
+}
+
+model Expense {
+  id            String        @id @default(cuid())
+  date          DateTime      @default(now())
+  category      String
+  description   String
+  amount        Int
+  paymentMethod PaymentMethod
+  notes         String?
+
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([date])
+  @@index([category])
+  @@index([paymentMethod])
+}
+
+model ReturnRecord {
+  id              String         @id @default(cuid())
+  invoiceId       String
+  date            DateTime       @default(now())
+  notes           String?
+  refundAmount    Int            @default(0)
+  refundMethod    PaymentMethod?
+  refundReference String?
+
+  invoice         Invoice        @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  items           ReturnItem[]
+  exchanges       ExchangeItem[]
+
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([invoiceId])
+  @@index([date])
+}
+
+model ReturnItem {
+  id            String       @id @default(cuid())
+  returnId      String
+  invoiceItemId String
+  qty           Int
+  restock       Boolean      @default(true)
+
+  returnRecord  ReturnRecord @relation(fields: [returnId], references: [id], onDelete: Cascade)
+  invoiceItem   InvoiceItem  @relation(fields: [invoiceItemId], references: [id], onDelete: Restrict)
+
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@index([returnId])
+  @@index([invoiceItemId])
+}
+
+model ExchangeItem {
+  id             String       @id @default(cuid())
+  returnId       String
+  invoiceItemId  String?
+  variantId      String
+  qty            Int
+  unitPrice      Int
+  unitCostAtSale Int
+
+  returnRecord   ReturnRecord @relation(fields: [returnId], references: [id], onDelete: Cascade)
+  invoiceItem    InvoiceItem? @relation(fields: [invoiceItemId], references: [id], onDelete: SetNull)
+  variant        Variant      @relation(fields: [variantId], references: [id], onDelete: Restrict)
+
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([returnId])
+  @@index([variantId])
+  @@index([invoiceItemId])
+}
+
+// Simple sequence storage for generated numbers, including yearly invoice counters.
+model Counter {
+  key     String @id
+  value   Int    @default(0)
+  updatedAt DateTime @updatedAt
+}
