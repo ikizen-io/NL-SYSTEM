@@ -1,7 +1,4 @@
-"use client";
-
 import Link from "next/link";
-import { useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
@@ -54,7 +51,6 @@ export function SalesLedgerFilters({
   brands: string[];
   categories: string[];
 }) {
-  const formRef = useRef<HTMLFormElement>(null);
   const activeStatus = values.status || "all";
 
   const activeFilterCount = [
@@ -99,7 +95,7 @@ export function SalesLedgerFilters({
       </div>
 
       {/* Detailed filter form */}
-      <form ref={formRef} className="px-4 pb-3 space-y-2">
+      <form className="px-4 pb-3 space-y-2">
         <input type="hidden" name="status" value={activeStatus} />
 
         {/* Row 1: search + dates */}
