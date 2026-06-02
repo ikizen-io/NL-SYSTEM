@@ -12,6 +12,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Page, PageActions, PageDescription, PageHeader, PageTitle } from "@/components/ui/page";
 import { ArrowLeft, Printer } from "lucide-react";
+import { formatLkr } from "@/lib/format";
+import { cn } from "@/lib/cn";
 import { AddPaymentForm } from "./AddPaymentForm";
 import { InvoiceDetailTabs } from "./InvoiceDetailTabs";
 import { InvoiceEditForm } from "./InvoiceEditForm";
@@ -54,6 +56,7 @@ export default async function InvoiceDetailPage({
 
   const returnRecords = toReturnRecordInput(inv.returnRecords);
   const stats = invoiceStatsFromRecord(inv);
+  const itemsSubtotal = inv.items.reduce((s, i) => s + i.qty * i.unitPrice, 0);
   const currentVariantIds = inv.items.map((item) => item.variantId);
 
   const [variants, customerList] = await Promise.all([
@@ -157,6 +160,8 @@ export default async function InvoiceDetailPage({
     })),
   }));
 
+  const printSlug = encodeURIComponent(inv.invoiceNo.replace("#", ""));
+
   return (
     <Page className="space-y-5">
       <PageHeader>
@@ -165,22 +170,51 @@ export default async function InvoiceDetailPage({
             <PageTitle>{inv.invoiceNo}</PageTitle>
             <Badge tone={stats.tone}>{stats.statusLabel}</Badge>
           </div>
-          <PageDescription className="mt-1">
-            {inv.issuedDate.toISOString().slice(0, 10)} •{" "}
-            {inv.customer?.name ?? "—"}
+          <PageDescription className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5">
+            <span>{inv.issuedDate.toISOString().slice(0, 10)}</span>
+            {inv.customer?.name && (
+              <>
+                <span className="text-zinc-300">·</span>
+                <Link
+                  prefetch={false}
+                  href={`/customers/${encodeURIComponent(inv.customer.name.toLowerCase().replace(/\s+/g, "-"))}`}
+                  className="hover:underline"
+                >
+                  {inv.customer.name}
+                </Link>
+              </>
+            )}
+            <span className="text-zinc-300">·</span>
+            <span>
+              Total{" "}
+              <span className="font-medium text-zinc-800">{formatLkr(stats.revenue)}</span>
+            </span>
+            <span className="text-zinc-300">·</span>
+            <span>
+              Paid{" "}
+              <span className="font-medium text-zinc-800">{formatLkr(stats.paid)}</span>
+            </span>
+            {stats.balance > 0 && (
+              <>
+                <span className="text-zinc-300">·</span>
+                <span className={cn("font-semibold text-amber-700")}>
+                  Due {formatLkr(stats.balance)}
+                </span>
+              </>
+            )}
           </PageDescription>
         </div>
         <PageActions>
-          <Button asChild size="sm">
-            <Link prefetch={false} href={`/invoices/${encodeURIComponent(inv.invoiceNo.replace("#", ""))}/print`}>
-              <Printer className="h-4 w-4" />
-              Print / Save PDF
-            </Link>
-          </Button>
           <Button asChild variant="outline" size="sm">
             <Link prefetch={false} href="/sales">
               <ArrowLeft className="h-4 w-4" />
               Back
+            </Link>
+          </Button>
+          <Button asChild size="sm">
+            <Link prefetch={false} href={`/invoices/${printSlug}/print`}>
+              <Printer className="h-4 w-4" />
+              Print / PDF
             </Link>
           </Button>
         </PageActions>
@@ -194,6 +228,11 @@ export default async function InvoiceDetailPage({
           balance: stats.balance,
           paid: stats.paid,
           refunded: stats.refunded,
+        }}
+        invoiceTotals={{
+          itemsSubtotal,
+          shippingCharge: inv.shippingCharge,
+          discountAmount: inv.discountAmount,
         }}
         lineItems={lineItems}
         edit={
@@ -280,7 +319,14 @@ export default async function InvoiceDetailPage({
               </Card>
               <Card>
                 <CardHeader>
-                  <CardTitle>Payment history</CardTitle>
+                  <CardTitle>
+                    Payment history
+                    {inv.payments.length > 0 && (
+                      <span className="ml-2 text-xs font-normal text-zinc-400">
+                        {inv.payments.length} record{inv.payments.length !== 1 ? "s" : ""}
+                      </span>
+                    )}
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <PaymentManager
@@ -299,7 +345,7 @@ export default async function InvoiceDetailPage({
             </div>
             <Card>
               <CardHeader>
-                <CardTitle>Invoice status</CardTitle>
+                <CardTitle>Invoice status &amp; void</CardTitle>
               </CardHeader>
               <CardContent>
                 <InvoiceStatusPanel
