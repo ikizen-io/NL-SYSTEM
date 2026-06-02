@@ -64,7 +64,7 @@ export function DashboardPresets({
             variant={active ? "primary" : "outline"}
             className={cn(active && "pointer-events-none")}
           >
-            <Link href={href}>{preset.label}</Link>
+            <Link prefetch={false} href={href}>{preset.label}</Link>
           </Button>
         );
       })}

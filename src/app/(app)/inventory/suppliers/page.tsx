@@ -26,7 +26,7 @@ export default async function SuppliersPage() {
         </div>
         <PageActions>
           <Button asChild variant="outline" size="sm">
-            <Link href="/inventory">Back</Link>
+            <Link prefetch={false} href="/inventory">Back</Link>
           </Button>
         </PageActions>
       </PageHeader>
@@ -60,7 +60,7 @@ export default async function SuppliersPage() {
                 <tr>
                   <TD className="py-6 text-zinc-500" colSpan={5}>
                     No suppliers yet.{" "}
-                    <Link href="/inventory/receive" className="underline">
+                    <Link prefetch={false} href="/inventory/receive" className="underline">
                       Receive stock
                     </Link>{" "}
                     or add one above.

@@ -48,7 +48,7 @@ export default async function BackupPage() {
         </div>
         <PageActions>
           <Button asChild variant="outline" size="sm">
-            <Link href="/import">Import</Link>
+            <Link prefetch={false} href="/import">Import</Link>
           </Button>
         </PageActions>
       </PageHeader>

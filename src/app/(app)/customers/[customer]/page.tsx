@@ -48,10 +48,10 @@ export default async function CustomerDetailPage({
         </div>
         <PageActions>
           <Button asChild variant="outline" size="sm">
-            <Link href="/customers">All customers</Link>
+            <Link prefetch={false} href="/customers">All customers</Link>
           </Button>
           <Button asChild size="sm">
-            <Link href="/sales">New sale</Link>
+            <Link prefetch={false} href="/sales">New sale</Link>
           </Button>
         </PageActions>
       </PageHeader>
@@ -131,7 +131,7 @@ export default async function CustomerDetailPage({
                         {invoice.issuedDate.toISOString().slice(0, 10)}
                       </TD>
                       <TD className="font-medium">
-                        <Link href={`/sales/${slug}`} className="hover:underline">
+                        <Link prefetch={false} href={`/sales/${slug}`} className="hover:underline">
                           {invoice.invoiceNo}
                         </Link>
                       </TD>

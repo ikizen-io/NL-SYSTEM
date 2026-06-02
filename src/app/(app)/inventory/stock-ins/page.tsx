@@ -82,10 +82,10 @@ export default async function StockInsPage({
         </div>
         <PageActions>
           <Button asChild variant="outline" size="sm">
-            <Link href="/inventory">Inventory</Link>
+            <Link prefetch={false} href="/inventory">Inventory</Link>
           </Button>
           <Button asChild size="sm">
-            <Link href="/inventory/receive">Receive purchase</Link>
+            <Link prefetch={false} href="/inventory/receive">Receive purchase</Link>
           </Button>
         </PageActions>
       </PageHeader>
@@ -127,7 +127,7 @@ export default async function StockInsPage({
                 <tr>
                   <TD className="py-6 text-zinc-500" colSpan={11}>
                     No stock-in batches found.{" "}
-                    <Link href="/inventory/receive" className="underline">
+                    <Link prefetch={false} href="/inventory/receive" className="underline">
                       Receive purchase
                     </Link>{" "}
                     to add stock.
@@ -138,7 +138,7 @@ export default async function StockInsPage({
                   <tr key={row.id} className="hover:bg-zinc-50">
                     <TD className="whitespace-nowrap">{row.receivedDate}</TD>
                     <TD className="font-mono text-xs">
-                      <Link
+                      <Link prefetch={false}
                         href={`/inventory/${encodeURIComponent(row.sku)}/edit`}
                         className="hover:underline"
                       >

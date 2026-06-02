@@ -29,7 +29,7 @@ export function StockInHistory({
         </CardHeader>
         <div className="px-4 pb-4 text-sm text-zinc-500">
           No stock received yet.{" "}
-          <Link href="/inventory/receive" className="underline">
+          <Link prefetch={false} href="/inventory/receive" className="underline">
             Receive purchase
           </Link>{" "}
           to add stock for {sku}.
@@ -43,7 +43,7 @@ export function StockInHistory({
       <CardHeader>
         <div className="flex items-center justify-between gap-2">
           <CardTitle>Stock-in history</CardTitle>
-          <Link
+          <Link prefetch={false}
             href="/inventory/stock-ins"
             className="text-xs font-medium text-zinc-500 hover:text-zinc-950"
           >

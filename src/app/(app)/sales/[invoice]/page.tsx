@@ -45,7 +45,7 @@ export default async function InvoiceDetailPage({
       <div className="space-y-4">
         <h1 className="text-xl font-semibold tracking-tight">Invoice</h1>
         <p className="text-sm text-zinc-500">Not found.</p>
-        <Link className="text-sm underline" href="/sales">
+        <Link prefetch={false} className="text-sm underline" href="/sales">
           Back to Sales
         </Link>
       </div>
@@ -172,13 +172,13 @@ export default async function InvoiceDetailPage({
         </div>
         <PageActions>
           <Button asChild size="sm">
-            <Link href={`/invoices/${encodeURIComponent(inv.invoiceNo.replace("#", ""))}/print`}>
+            <Link prefetch={false} href={`/invoices/${encodeURIComponent(inv.invoiceNo.replace("#", ""))}/print`}>
               <Printer className="h-4 w-4" />
               Print / Save PDF
             </Link>
           </Button>
           <Button asChild variant="outline" size="sm">
-            <Link href="/sales">
+            <Link prefetch={false} href="/sales">
               <ArrowLeft className="h-4 w-4" />
               Back
             </Link>

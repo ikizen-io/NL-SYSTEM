@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { PrintButton } from "./PrintButton";
 
 export const dynamic = "force-dynamic";
+export const preferredRegion = "hnd1";
 
 function invoiceLookup(invoice: string) {
   const decoded = decodeURIComponent(invoice);
@@ -85,7 +86,7 @@ export default async function PrintableInvoicePage({
   return (
     <main className="min-h-screen bg-zinc-100 px-4 py-6 text-zinc-950 print:bg-white print:p-0">
       <div className="mx-auto mb-4 flex max-w-[820px] items-center justify-between print:hidden">
-        <Link
+        <Link prefetch={false}
           href={`/sales/${encodeURIComponent(decoded.replace("#", ""))}`}
           className="text-sm font-medium text-zinc-600 hover:text-zinc-950"
         >

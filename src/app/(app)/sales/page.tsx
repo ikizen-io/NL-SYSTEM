@@ -161,10 +161,10 @@ export default async function SalesPage({
         </div>
         <PageActions>
           <Button asChild variant="outline" size="sm">
-            <Link href="/customers">Customers</Link>
+            <Link prefetch={false} href="/customers">Customers</Link>
           </Button>
           <Button asChild variant="outline" size="sm">
-            <Link href="/dashboard">Dashboard</Link>
+            <Link prefetch={false} href="/dashboard">Dashboard</Link>
           </Button>
         </PageActions>
       </PageHeader>
@@ -226,7 +226,7 @@ export default async function SalesPage({
                         {inv.issuedDate.toISOString().slice(0, 10)}
                       </TD>
                       <TD className="whitespace-nowrap font-medium">
-                        <Link
+                        <Link prefetch={false}
                           href={`/sales/${slug}`}
                           className="text-zinc-950 hover:underline"
                         >
@@ -235,7 +235,7 @@ export default async function SalesPage({
                       </TD>
                       <TD className="max-w-[180px] truncate">
                         {inv.customer?.name ? (
-                          <Link
+                          <Link prefetch={false}
                             href={`/customers/${customerSlug(inv.customer.name)}`}
                             className="text-zinc-950 hover:underline"
                           >
@@ -277,13 +277,13 @@ export default async function SalesPage({
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                               <DropdownMenuItem asChild>
-                                <Link href={`/sales/${slug}`}>
+                                <Link prefetch={false} href={`/sales/${slug}`}>
                                   <Pencil className="h-4 w-4 text-zinc-400" />
                                   Manage invoice
                                 </Link>
                               </DropdownMenuItem>
                               <DropdownMenuItem asChild>
-                                <Link href={`/invoices/${slug}/print`}>
+                                <Link prefetch={false} href={`/invoices/${slug}/print`}>
                                   <Printer className="h-4 w-4 text-zinc-400" />
                                   Print / PDF
                                 </Link>
@@ -324,7 +324,7 @@ export default async function SalesPage({
           </div>
           <div className="flex gap-2">
             <Button asChild variant="outline" size="sm">
-              <Link
+              <Link prefetch={false}
                 href={`/sales?${salesFilterQuery({
                   ...filterValues,
                   page: String(Math.max(1, page - 1)),
@@ -334,7 +334,7 @@ export default async function SalesPage({
               </Link>
             </Button>
             <Button asChild variant="outline" size="sm">
-              <Link
+              <Link prefetch={false}
                 href={`/sales?${salesFilterQuery({
                   ...filterValues,
                   page: String(Math.min(totalPages, page + 1)),

@@ -49,27 +49,27 @@ export default async function InventoryPage({
         </div>
         <PageActions>
           <Button asChild variant="outline" size="sm">
-            <Link href="/reports">Reports</Link>
+            <Link prefetch={false} href="/reports">Reports</Link>
           </Button>
           <Button asChild variant="outline" size="sm">
-            <Link href="/inventory/stock-ins">Stock-in history</Link>
+            <Link prefetch={false} href="/inventory/stock-ins">Stock-in history</Link>
           </Button>
           <Button asChild variant="outline" size="sm">
-            <Link href={showArchived ? "/inventory" : "/inventory?show=archived"}>
+            <Link prefetch={false} href={showArchived ? "/inventory" : "/inventory?show=archived"}>
               {showArchived ? "Active only" : "Show archived"}
             </Link>
           </Button>
           <Button asChild variant="outline" size="sm">
-            <Link href="/inventory/suppliers">Suppliers</Link>
+            <Link prefetch={false} href="/inventory/suppliers">Suppliers</Link>
           </Button>
           <Button asChild variant="outline" size="sm">
-            <Link href="/inventory/adjust">Adjust stock</Link>
+            <Link prefetch={false} href="/inventory/adjust">Adjust stock</Link>
           </Button>
           <Button asChild variant="outline" size="sm">
-            <Link href="/inventory/new">Add SKU</Link>
+            <Link prefetch={false} href="/inventory/new">Add SKU</Link>
           </Button>
           <Button asChild size="sm">
-            <Link href="/inventory/receive">Receive purchase</Link>
+            <Link prefetch={false} href="/inventory/receive">Receive purchase</Link>
           </Button>
         </PageActions>
       </PageHeader>

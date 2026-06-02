@@ -86,7 +86,7 @@ export default async function CustomersPage({
         </div>
         <PageActions>
           <Button asChild variant="outline" size="sm">
-            <Link href="/sales">Sales</Link>
+            <Link prefetch={false} href="/sales">Sales</Link>
           </Button>
         </PageActions>
       </PageHeader>
@@ -131,7 +131,7 @@ export default async function CustomersPage({
                 rows.map((row) => (
                   <tr key={row.name} className="hover:bg-zinc-50">
                     <TD className="font-medium">
-                      <Link
+                      <Link prefetch={false}
                         href={`/customers/${customerSlug(row.name)}`}
                         className="text-zinc-950 hover:underline"
                       >

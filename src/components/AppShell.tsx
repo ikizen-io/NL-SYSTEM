@@ -54,7 +54,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,#fff_0,#f7f7f8_34rem,#f4f4f5_100%)] text-zinc-950">
       <div className="flex min-h-screen w-full">
         <aside className="hidden w-56 shrink-0 border-r border-zinc-200/80 bg-white/90 px-3 py-4 shadow-[1px_0_0_rgba(24,24,27,0.02)] backdrop-blur md:flex md:flex-col">
-          <Link
+          <Link prefetch={false}
             href="/dashboard"
             className="mb-5 flex items-center gap-2.5 rounded-xl px-1 py-1"
           >
@@ -81,7 +81,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 pathname === item.href || pathname?.startsWith(`${item.href}/`);
               const Icon = item.icon;
               return (
-                <Link
+                <Link prefetch={false}
                   key={item.href}
                   href={item.href}
                   className={cn(
@@ -111,7 +111,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               {quickActions.map((action) => {
                 const Icon = action.icon;
                 return (
-                  <Link
+                  <Link prefetch={false}
                     key={action.href}
                     href={action.href}
                     className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-xs font-medium text-zinc-700 transition-colors hover:bg-white hover:text-zinc-950 hover:shadow-sm"
@@ -126,7 +126,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
           <div className="mt-auto border-t border-zinc-100 pt-3">
             <div className="mb-1.5 text-[11px] text-zinc-400">
-              Local workspace • SQLite
+              Supabase Postgres
             </div>
             <a
               href="/api/auth/logout"
@@ -159,7 +159,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                       const Icon = item.icon;
                       return (
                         <DropdownMenuItem key={item.href} asChild>
-                          <Link href={item.href}>
+                          <Link prefetch={false} href={item.href}>
                             <Icon className="h-4 w-4 text-zinc-400" />
                             {item.label}
                           </Link>
@@ -177,7 +177,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     className="h-5 w-5 shrink-0 object-contain md:hidden"
                     aria-hidden
                   />
-                  <Link href="/dashboard" className="font-medium text-zinc-800 hover:text-zinc-950">
+                  <Link prefetch={false} href="/dashboard" className="font-medium text-zinc-800 hover:text-zinc-950">
                     Nitro Labs
                   </Link>
                   {active ? (
@@ -198,7 +198,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                       variant={action.href === "/sales" ? "primary" : "outline"}
                       size="sm"
                     >
-                      <Link href={action.href}>
+                      <Link prefetch={false} href={action.href}>
                         <Icon className="h-3.5 w-3.5" />
                         {action.label}
                       </Link>

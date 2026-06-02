@@ -50,7 +50,7 @@ export default async function AdjustStockPage() {
         </div>
         <PageActions>
           <Button asChild variant="outline" size="sm">
-            <Link href="/inventory">Back</Link>
+            <Link prefetch={false} href="/inventory">Back</Link>
           </Button>
         </PageActions>
       </PageHeader>

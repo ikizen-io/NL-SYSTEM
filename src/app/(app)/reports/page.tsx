@@ -156,10 +156,10 @@ export default async function ReportsPage() {
         </div>
         <PageActions>
           <Button asChild variant="outline" size="sm">
-            <Link href="/dashboard">Dashboard</Link>
+            <Link prefetch={false} href="/dashboard">Dashboard</Link>
           </Button>
           <Button asChild variant="outline" size="sm">
-            <Link href="/inventory/stock-ins">Stock-in history</Link>
+            <Link prefetch={false} href="/inventory/stock-ins">Stock-in history</Link>
           </Button>
         </PageActions>
       </PageHeader>
@@ -276,13 +276,13 @@ export default async function ReportsPage() {
                   return (
                     <tr key={invoice.id} className="hover:bg-zinc-50">
                       <TD className="font-medium">
-                        <Link href={`/sales/${slug}`} className="hover:underline">
+                        <Link prefetch={false} href={`/sales/${slug}`} className="hover:underline">
                           {invoice.invoiceNo}
                         </Link>
                       </TD>
                       <TD>
                         {invoice.customer?.name ? (
-                          <Link
+                          <Link prefetch={false}
                             href={`/customers/${customerSlug(invoice.customer.name)}`}
                             className="hover:underline"
                           >
@@ -427,7 +427,7 @@ export default async function ReportsPage() {
                 lowStockRows.map((row) => (
                   <tr key={row.sku} className="hover:bg-zinc-50">
                     <TD className="font-mono text-xs">
-                      <Link
+                      <Link prefetch={false}
                         href={`/inventory/${encodeURIComponent(row.sku)}/edit`}
                         className="hover:underline"
                       >

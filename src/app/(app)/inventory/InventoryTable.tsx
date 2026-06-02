@@ -128,7 +128,7 @@ export function InventoryTable({
                     <TD align="right">
                       {row.active ? (
                         <div className="flex justify-end gap-1">
-                          <Link
+                          <Link prefetch={false}
                             href={`/inventory/${encodeURIComponent(row.sku)}/edit`}
                             title="Edit"
                             className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50"

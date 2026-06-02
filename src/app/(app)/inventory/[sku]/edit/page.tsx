@@ -66,10 +66,10 @@ export default async function EditSkuPage({
         </div>
         <PageActions>
           <Button asChild variant="outline" size="sm">
-            <Link href="/inventory/stock-ins">Stock-in history</Link>
+            <Link prefetch={false} href="/inventory/stock-ins">Stock-in history</Link>
           </Button>
           <Button asChild variant="outline" size="sm">
-            <Link href="/inventory">Back</Link>
+            <Link prefetch={false} href="/inventory">Back</Link>
           </Button>
         </PageActions>
       </PageHeader>

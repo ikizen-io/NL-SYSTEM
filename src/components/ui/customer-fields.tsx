@@ -100,7 +100,7 @@ export function CustomerFields({
         <div className="mb-1 flex items-center justify-between gap-2">
           <Label>Customer name</Label>
           {customers.some((customer) => customer.name === customerName) ? (
-            <Link
+            <Link prefetch={false}
               href={`/customers/${customerSlug(customerName)}`}
               className="text-[11px] font-medium text-zinc-500 hover:text-zinc-950"
             >

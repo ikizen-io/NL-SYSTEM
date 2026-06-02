@@ -136,7 +136,7 @@ export function SalesLedgerFilters({
       </Button>
       {hasActiveFilter ? (
         <Button asChild variant="outline" size="sm">
-          <Link href="/sales">Clear</Link>
+          <Link prefetch={false} href="/sales">Clear</Link>
         </Button>
       ) : null}
     </form>
