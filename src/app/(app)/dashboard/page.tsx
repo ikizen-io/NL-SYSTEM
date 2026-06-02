@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { invoiceFinancialInclude, invoiceStatsFromRecord } from "@/lib/invoice-queries";
+import { invoiceStatsFromRecord, salesLedgerInclude } from "@/lib/invoice-queries";
 import { formatLkr, formatPct } from "@/lib/format";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -59,18 +59,20 @@ export default async function DashboardPage({
   const start = bounds.start;
   const end = bounds.end;
 
-  const invoices = await prisma.invoice.findMany({
-    where: {
-      issuedDate: { gte: start, lte: end },
-      status: { in: ["ISSUED", "RETURNED"] },
-    },
-    include: invoiceFinancialInclude,
-    orderBy: { issuedDate: "desc" },
-  });
-
-  const expenses = await prisma.expense.findMany({
-    where: { date: { gte: start, lte: end } },
-  });
+  const [invoices, expenseAgg] = await Promise.all([
+    prisma.invoice.findMany({
+      where: {
+        issuedDate: { gte: start, lte: end },
+        status: { in: ["ISSUED", "RETURNED"] },
+      },
+      include: salesLedgerInclude,
+      orderBy: { issuedDate: "desc" },
+    }),
+    prisma.expense.aggregate({
+      where: { date: { gte: start, lte: end } },
+      _sum: { amount: true },
+    }),
+  ]);
 
   let revenue = 0;
   let cogs = 0;
@@ -81,7 +83,7 @@ export default async function DashboardPage({
   }
 
   const grossProfit = revenue - cogs;
-  const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
+  const totalExpenses = expenseAgg._sum.amount ?? 0;
   const netProfit = grossProfit - totalExpenses;
   const margin = revenue !== 0 ? grossProfit / revenue : 0;
 

@@ -26,6 +26,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { NavigationProgress } from "@/components/NavigationProgress";
+import type { DatabaseMode } from "@/lib/runtime";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -44,7 +46,13 @@ const quickActions = [
   { href: "/inventory/receive", label: "Receive stock", icon: PackagePlus },
 ] as const;
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+export function AppShell({
+  children,
+  databaseMode,
+}: {
+  children: React.ReactNode;
+  databaseMode: DatabaseMode;
+}) {
   const pathname = usePathname();
   const active = navItems.find(
     (item) => pathname === item.href || pathname?.startsWith(`${item.href}/`),
@@ -52,6 +60,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,#fff_0,#f7f7f8_34rem,#f4f4f5_100%)] text-zinc-950">
+      <NavigationProgress />
       <div className="flex min-h-screen w-full">
         <aside className="hidden w-56 shrink-0 border-r border-zinc-200/80 bg-white/90 px-3 py-4 shadow-[1px_0_0_rgba(24,24,27,0.02)] backdrop-blur md:flex md:flex-col">
           <Link prefetch={false}
@@ -125,8 +134,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
 
           <div className="mt-auto border-t border-zinc-100 pt-3">
-            <div className="mb-1.5 text-[11px] text-zinc-400">
-              Supabase Postgres
+            <div
+              className="mb-1.5 text-[11px] text-zinc-400"
+              title={databaseMode.backupHint}
+            >
+              {databaseMode.shortLabel}
             </div>
             <a
               href="/api/auth/logout"

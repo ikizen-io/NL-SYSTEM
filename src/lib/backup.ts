@@ -1,11 +1,10 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { isSqliteDatabase } from "@/lib/runtime";
+
+export { isSqliteDatabase };
 
 const BACKUP_DIR_NAME = "backups";
-
-export function isSqliteDatabase() {
-  return (process.env.DATABASE_URL ?? "").startsWith("file:");
-}
 
 export function resolveDatabasePath() {
   const url = process.env.DATABASE_URL ?? "file:./dev.db";

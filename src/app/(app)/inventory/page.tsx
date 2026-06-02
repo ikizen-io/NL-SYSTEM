@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { formatLkr } from "@/lib/format";
 import { computeInventoryRows } from "@/lib/inventory";
+import { variantStockInclude } from "@/lib/inventory-queries";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Page, PageActions, PageDescription, PageHeader, PageTitle } from "@/components/ui/page";
@@ -12,12 +13,7 @@ export const dynamic = "force-dynamic";
 async function loadVariants(showArchived: boolean) {
   return prisma.variant.findMany({
     where: showArchived ? undefined : { active: true },
-    include: {
-      product: true,
-      stockIns: true,
-      adjustments: true,
-      invoiceItems: { include: { invoice: { select: { status: true } } } },
-    },
+    include: variantStockInclude,
   });
 }
 

@@ -1,8 +1,13 @@
+import { Alert } from "@/components/ui/alert";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Page, PageDescription, PageHeader, PageTitle } from "@/components/ui/page";
+import { getDatabaseMode } from "@/lib/runtime";
 import { ImportInventoryForm, ImportExpensesForm } from "./ImportForms";
 
+export const dynamic = "force-dynamic";
+
 export default function ImportPage() {
+  const databaseMode = getDatabaseMode();
   return (
     <Page>
       <PageHeader>
@@ -13,6 +18,17 @@ export default function ImportPage() {
           </PageDescription>
         </div>
       </PageHeader>
+
+      {databaseMode.kind === "postgres" ? (
+        <Alert tone="warning">
+          You are importing into <strong>production data</strong> (Supabase). Double-check
+          CSV files before uploading — imports cannot be undone from this screen.
+        </Alert>
+      ) : (
+        <Alert tone="info">
+          Local SQLite workspace. Imports update your dev database only.
+        </Alert>
+      )}
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>

@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { formatLkr, formatPct } from "@/lib/format";
-import { invoiceFinancialInclude, invoiceStatsFromRecord } from "@/lib/invoice-queries";
+import { invoiceStatsFromRecord, reportsInvoiceInclude } from "@/lib/invoice-queries";
 import { customerSlug } from "@/lib/invoices";
 import { computeInventoryRows } from "@/lib/inventory";
+import { variantStockInclude } from "@/lib/inventory-queries";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,29 +17,17 @@ export default async function ReportsPage() {
   const [variants, allIssuedInvoices, expenses] = await Promise.all([
     prisma.variant.findMany({
       where: { active: true },
-      include: {
-        product: true,
-        stockIns: true,
-        adjustments: true,
-        invoiceItems: { include: { invoice: { select: { status: true } } } },
-      },
+      include: variantStockInclude,
     }),
     prisma.invoice.findMany({
       where: { status: { in: ["ISSUED", "RETURNED"] } },
-      include: {
-        ...invoiceFinancialInclude,
-        customer: true,
-        payments: true,
-        items: {
-          include: {
-            variant: { include: { product: true } },
-            returnItems: true,
-          },
-        },
-      },
+      include: reportsInvoiceInclude,
       orderBy: { issuedDate: "desc" },
     }),
-    prisma.expense.findMany({ orderBy: { date: "desc" } }),
+    prisma.expense.findMany({
+      select: { category: true, amount: true },
+      orderBy: { date: "desc" },
+    }),
   ]);
 
   const inventoryRows = computeInventoryRows(variants);

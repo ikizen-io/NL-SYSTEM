@@ -1,7 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { formatLkr, formatPct } from "@/lib/format";
 import { customerSlug } from "@/lib/invoices";
-import { invoiceStatsFromRecord } from "@/lib/invoice-queries";
+import { invoiceStatsFromRecord, salesLedgerInclude } from "@/lib/invoice-queries";
+import { variantStockInclude } from "@/lib/inventory-queries";
 import {
   buildSalesInvoiceWhere,
   filterInvoicesByDerivedStatus,
@@ -44,13 +45,6 @@ function availableStock(variant: {
   return received + adjusted - sold;
 }
 
-const invoiceInclude = {
-  customer: true,
-  items: { include: { variant: { include: { product: true } } } },
-  payments: true,
-  returnRecords: { include: { items: true } },
-} as const;
-
 export default async function SalesPage({
   searchParams,
 }: {
@@ -65,12 +59,7 @@ export default async function SalesPage({
   const [variants, customers, products] = await Promise.all([
     prisma.variant.findMany({
       where: { active: true },
-      include: {
-        product: true,
-        stockIns: true,
-        adjustments: true,
-        invoiceItems: { include: { invoice: { select: { status: true } } } },
-      },
+      include: variantStockInclude,
       orderBy: { sku: "asc" },
     }),
     prisma.customer.findMany({
@@ -94,7 +83,7 @@ export default async function SalesPage({
 
   let invoices: Awaited<
     ReturnType<
-      typeof prisma.invoice.findMany<{ include: typeof invoiceInclude }>
+      typeof prisma.invoice.findMany<{ include: typeof salesLedgerInclude }>
     >
   >;
   let invoiceCount: number;
@@ -104,7 +93,7 @@ export default async function SalesPage({
   if (usesDerivedStatus) {
     const allInvoices = await prisma.invoice.findMany({
       where: invoiceWhere,
-      include: invoiceInclude,
+      include: salesLedgerInclude,
       orderBy: { issuedDate: "desc" },
     });
     const filtered = filterInvoicesByDerivedStatus(allInvoices, filters.status);
@@ -117,7 +106,7 @@ export default async function SalesPage({
     [invoices, invoiceCount] = await Promise.all([
       prisma.invoice.findMany({
         where: invoiceWhere,
-        include: invoiceInclude,
+        include: salesLedgerInclude,
         orderBy: { issuedDate: "desc" },
         skip: (filters.page - 1) * pageSize,
         take: pageSize,

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getLatestBackupInfo, isSqliteDatabase } from "@/lib/backup";
+import { getDatabaseMode } from "@/lib/runtime";
 import { exportDatasets } from "@/lib/export-data";
 import { formatLkr } from "@/lib/format";
 import { Alert } from "@/components/ui/alert";
@@ -32,6 +33,7 @@ function daysSince(date: Date) {
 }
 
 export default async function BackupPage() {
+  const databaseMode = getDatabaseMode();
   const sqliteAvailable = isSqliteDatabase();
   const latestBackup = sqliteAvailable ? await getLatestBackupInfo() : null;
   const backupAgeDays = latestBackup ? daysSince(latestBackup.mtime) : null;
@@ -42,8 +44,7 @@ export default async function BackupPage() {
         <div>
           <PageTitle>Backup & export</PageTitle>
           <PageDescription>
-            Protect your data and export CSV snapshots for spreadsheets or
-            external tools.
+            {databaseMode.backupHint}
           </PageDescription>
         </div>
         <PageActions>
@@ -55,8 +56,9 @@ export default async function BackupPage() {
 
       {!sqliteAvailable ? (
         <Alert tone="info">
-          Hosted Postgres backups are managed in Supabase. Use CSV exports below
-          for app-level snapshots.
+          <strong>Production (Supabase):</strong> database backups and point-in-time
+          recovery are managed in the Supabase dashboard. Use CSV exports below for
+          spreadsheet snapshots from this app.
         </Alert>
       ) : !latestBackup ? (
         <Alert tone="warning">

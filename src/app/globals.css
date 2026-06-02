@@ -81,3 +81,12 @@ input[type="number"] {
   border: 3px solid transparent;
   background-clip: content-box;
 }
+
+@keyframes nav-progress {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(350%);
+  }
+}
