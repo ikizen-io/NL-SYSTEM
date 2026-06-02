@@ -31,9 +31,14 @@ export default async function EditSkuPage({
   if (!variant || !variant.active) notFound();
 
   const latestStockIn = variant.stockIns[0] ?? null;
-  const productList = await prisma.product.findMany({
-    select: { brand: true, category: true },
-  });
+  const [productList, supplierList] = await Promise.all([
+    prisma.product.findMany({ select: { brand: true, category: true } }),
+    prisma.supplier.findMany({
+      where: { active: true },
+      select: { id: true, name: true },
+      orderBy: { name: "asc" },
+    }),
+  ]);
   const brands = Array.from(
     new Set([
       ...productList.map((product) => product.brand),
@@ -97,7 +102,7 @@ export default async function EditSkuPage({
         </CardContent>
       </Card>
 
-      <StockInHistory sku={variant.sku} stockIns={variant.stockIns} />
+      <StockInHistory sku={variant.sku} stockIns={variant.stockIns} suppliers={supplierList} />
     </Page>
   );
 }

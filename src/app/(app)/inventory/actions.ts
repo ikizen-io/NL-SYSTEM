@@ -806,3 +806,92 @@ export async function updateSku(
   revalidatePath("/insights");
   return { ok: true };
 }
+
+const updateStockInSchema = z.object({
+  id: z.string().min(1),
+  sku: z.string().min(1),
+  receivedDate: z.string().min(1),
+  supplierId: optionalText(50),
+  supplierCustom: optionalText(80),
+  purchaseRef: optionalText(80),
+  unitCost: z.coerce.number().int().positive(),
+  extraCost: optionalMoney(z.coerce.number().int().nonnegative()),
+  notes: optionalText(200),
+});
+
+export async function updateStockIn(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const parsed = updateStockInSchema.safeParse({
+    id: formData.get("id"),
+    sku: formData.get("sku"),
+    receivedDate: formData.get("receivedDate"),
+    supplierId: formData.get("supplierId"),
+    supplierCustom: formData.get("supplierCustom"),
+    purchaseRef: formData.get("purchaseRef"),
+    unitCost: formData.get("unitCost"),
+    extraCost: formData.get("extraCost"),
+    notes: formData.get("notes"),
+  });
+  if (!parsed.success) {
+    return { error: "Please check the stock-in details." };
+  }
+
+  const v = parsed.data;
+
+  try {
+    let supplierId: string | null = null;
+    let supplierName: string | null = null;
+
+    if (v.supplierId === "__NEW__") {
+      const name = (v.supplierCustom ?? "").trim();
+      if (name) {
+        const rec = await prisma.supplier.upsert({
+          where: { name },
+          update: { active: true },
+          create: { name },
+          select: { id: true, name: true },
+        });
+        supplierId = rec.id;
+        supplierName = rec.name;
+      }
+    } else if (v.supplierId) {
+      const rec = await prisma.supplier.findFirst({
+        where: { id: v.supplierId, active: true },
+        select: { id: true, name: true },
+      });
+      if (rec) {
+        supplierId = rec.id;
+        supplierName = rec.name;
+      }
+    }
+
+    await prisma.stockIn.update({
+      where: { id: v.id },
+      data: {
+        receivedDate: new Date(v.receivedDate),
+        supplierId,
+        supplier: supplierName,
+        purchaseRef: v.purchaseRef?.trim() || null,
+        unitCost: v.unitCost,
+        extraCost: Number.isFinite(v.extraCost as number) && (v.extraCost as number) > 0
+          ? Number(v.extraCost)
+          : null,
+        notes: v.notes?.trim() || null,
+      },
+    });
+  } catch (error) {
+    return {
+      error:
+        error instanceof Error
+          ? error.message
+          : "Could not update stock-in. Please try again.",
+    };
+  }
+
+  revalidatePath("/inventory");
+  revalidatePath(`/inventory/${encodeURIComponent(v.sku)}/edit`);
+  revalidatePath("/inventory/stock-ins");
+  return { ok: true };
+}
