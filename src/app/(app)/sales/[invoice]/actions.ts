@@ -436,8 +436,11 @@ export async function updateInvoice(
 
       for (const [sku, requested] of requestedQty) {
         const variant = bySku.get(sku)!;
-        const available =
-          currentStockForVariant(variant) + (currentIssuedQty.get(sku) ?? 0);
+        const alreadyIssued = currentIssuedQty.get(sku) ?? 0;
+        const available = Math.max(
+          currentStockForVariant(variant) + alreadyIssued,
+          alreadyIssued,
+        );
         if (requested > available) {
           throw new Error(
             `${sku} has only ${available} available. Requested ${requested}.`,
