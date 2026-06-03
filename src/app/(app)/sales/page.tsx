@@ -127,14 +127,13 @@ export default async function SalesPage({
     if (s.balance > 0) { totalOutstanding += s.balance; outstandingCount += 1; }
   }
 
-  const saleSkus = variants
-    .map((variant) => ({
-      sku: variant.sku,
-      label: `${variant.sku} — ${variant.product.brand} / ${variant.product.modelName} / ${variant.sizeLabel}${variant.color ? ` / ${variant.color}` : ""}`,
-      targetPrice: variant.targetPrice,
-      stock: availableStock(variant),
-    }))
-    .filter((sku) => sku.stock > 0);
+  const allSaleSkus = variants.map((variant) => ({
+    sku: variant.sku,
+    label: `${variant.sku} — ${variant.product.brand} / ${variant.product.modelName} / ${variant.sizeLabel}${variant.color ? ` / ${variant.color}` : ""}`,
+    targetPrice: variant.targetPrice,
+    stock: availableStock(variant),
+  }));
+  const saleSkus = allSaleSkus.filter((sku) => sku.stock > 0);
 
   const filterValues = {
     q: filters.q,
@@ -166,7 +165,7 @@ export default async function SalesPage({
         </PageActions>
       </PageHeader>
 
-      <NewSaleForm skus={saleSkus} customers={customers} />
+      <NewSaleForm skus={saleSkus} allSkus={allSaleSkus} customers={customers} />
 
       <Card>
         {/* Card title + summary stats */}

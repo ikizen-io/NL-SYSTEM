@@ -187,13 +187,17 @@ export async function createSale(
         requestedBySku.set(sku, (requestedBySku.get(sku) ?? 0) + item.qty);
       }
 
-      for (const [sku, requested] of requestedBySku) {
-        const variant = bySku.get(sku)!;
-        const available = availableStock(variant);
-        if (requested > available) {
-          throw new Error(
-            `${sku} has only ${available} in stock. Requested ${requested}.`,
-          );
+      const isPreOrder = formData.get("preOrder") === "true";
+
+      if (!isPreOrder) {
+        for (const [sku, requested] of requestedBySku) {
+          const variant = bySku.get(sku)!;
+          const available = availableStock(variant);
+          if (requested > available) {
+            throw new Error(
+              `${sku} has only ${available} in stock. Requested ${requested}.`,
+            );
+          }
         }
       }
 

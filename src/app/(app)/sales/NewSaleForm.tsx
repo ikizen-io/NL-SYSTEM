@@ -11,7 +11,8 @@ import { Input, Label } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { formatLkr } from "@/lib/format";
 import { safeInt } from "@/lib/forms";
-import { Plus, Trash2 } from "lucide-react";
+import { cn } from "@/lib/cn";
+import { Plus, Trash2, PackageSearch } from "lucide-react";
 import { toast } from "sonner";
 import { createSale, type SaleActionState } from "./actions";
 
@@ -31,12 +32,17 @@ type CustomerOption = {
 
 export function NewSaleForm({
   skus,
+  allSkus,
   customers,
 }: {
-  skus: SaleSku[];
+  skus: SaleSku[];       // in-stock only
+  allSkus: SaleSku[];    // all active SKUs (for pre-order mode)
   customers: CustomerOption[];
 }) {
-  const firstSku = skus[0];
+  const [preOrder, setPreOrder] = useState(false);
+  const activeSkus = preOrder ? allSkus : skus;
+  const firstSku = activeSkus[0];
+
   const [items, setItems] = useState<Item[]>([
     { sku: firstSku?.sku ?? "", qty: 1, unitPrice: firstSku?.targetPrice ?? 0 },
   ]);
@@ -48,20 +54,16 @@ export function NewSaleForm({
   const [customerAddress, setCustomerAddress] = useState("");
 
   const resetForm = useCallback(() => {
-    setItems([
-      {
-        sku: firstSku?.sku ?? "",
-        qty: 1,
-        unitPrice: firstSku?.targetPrice ?? 0,
-      },
-    ]);
+    const first = (preOrder ? allSkus : skus)[0];
+    setItems([{ sku: first?.sku ?? "", qty: 1, unitPrice: first?.targetPrice ?? 0 }]);
     setShippingCharge(0);
     setDiscountAmount(0);
     setCustomerName("");
     setCustomerPhone("");
     setCustomerInstagram("");
     setCustomerAddress("");
-  }, [firstSku]);
+    setPreOrder(false);
+  }, [preOrder, allSkus, skus]);
 
   const [state, formAction, pending] = useActionState(
     async (prevState: SaleActionState, formData: FormData) => {
@@ -96,22 +98,22 @@ export function NewSaleForm({
 
   const skuOptions = useMemo(
     () =>
-      skus.map((sku) => ({
+      activeSkus.map((sku) => ({
         value: sku.sku,
         label: sku.label,
-        description: `${sku.stock} in stock`,
+        description: sku.stock > 0 ? `${sku.stock} in stock` : "Out of stock",
       })),
-    [skus],
+    [activeSkus],
   );
 
   const oversoldLines = useMemo(
     () =>
       items.filter((item) => {
-        if (!item.sku.trim()) return false;
+        if (!item.sku.trim() || preOrder) return false;
         const stock = skus.find((sku) => sku.sku === item.sku)?.stock ?? 0;
         return item.qty > stock;
       }),
-    [items, skus],
+    [items, skus, preOrder],
   );
 
   return (
@@ -123,26 +125,52 @@ export function NewSaleForm({
             Search a saved customer or enter a new one below.
           </div>
         </div>
-        <div className="text-xs text-zinc-500">
-          Grand total:{" "}
-          <span className="font-semibold text-zinc-950">
-            {formatLkr(totals.grandTotal)}
-          </span>
+        <div className="flex items-center gap-3">
+          {/* Pre-order toggle */}
+          <button
+            type="button"
+            onClick={() => setPreOrder((v) => !v)}
+            className={cn(
+              "flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors",
+              preOrder
+                ? "border-blue-300 bg-blue-50 text-blue-700"
+                : "border-zinc-200 bg-white text-zinc-500 hover:border-zinc-300 hover:text-zinc-700",
+            )}
+            title="Allow creating invoices for items not yet in stock"
+          >
+            <PackageSearch className="h-3.5 w-3.5" />
+            Pre-order
+          </button>
+          <div className="text-xs text-zinc-500">
+            Grand total:{" "}
+            <span className="font-semibold text-zinc-950">
+              {formatLkr(totals.grandTotal)}
+            </span>
+          </div>
         </div>
       </CardHeader>
 
       <form action={formAction} className="space-y-4 p-4">
         <input type="hidden" name="items" value={JSON.stringify(cleanedItems)} />
+        <input type="hidden" name="preOrder" value={preOrder ? "true" : "false"} />
 
         <ActionStateBanner error={state.error} />
 
-        {oversoldLines.length > 0 ? (
+        {preOrder && (
+          <Alert tone="info">
+            <strong>Pre-order mode</strong> — you can invoice any active SKU regardless of current
+            stock. Use this when the customer is paying an advance for items you will source.
+            Stock will go negative until you receive the purchase.
+          </Alert>
+        )}
+
+        {!preOrder && oversoldLines.length > 0 && (
           <Alert tone="warning">
             {oversoldLines.length === 1
               ? "One line exceeds available stock. The server will reject the sale if stock is insufficient."
               : `${oversoldLines.length} lines exceed available stock. The server will reject the sale if stock is insufficient.`}
           </Alert>
-        ) : null}
+        )}
 
         <FormSection title="Customer">
           <div className="grid gap-3 md:grid-cols-12">
@@ -179,7 +207,7 @@ export function NewSaleForm({
               type="button"
               variant="ghost"
               size="sm"
-              disabled={skus.length === 0}
+              disabled={activeSkus.length === 0}
               onClick={() =>
                 setItems((prev) => [
                   ...prev,
@@ -227,7 +255,7 @@ export function NewSaleForm({
                         setItems((prev) =>
                           prev.map((p, i) => {
                             if (i !== idx) return p;
-                            const selected = skus.find(
+                            const selected = activeSkus.find(
                               (s) => s.sku === value,
                             );
                             return {
@@ -240,12 +268,15 @@ export function NewSaleForm({
                       }
                       placeholder="Select SKU"
                       searchPlaceholder="Search SKU, brand, model..."
-                      emptyText="No stocked SKU found."
+                      emptyText="No matching SKU found."
                       className="h-9"
                     />
                   </td>
-                  <td className="px-3 py-1.5 text-right tabular-nums text-zinc-600">
-                    {stock}
+                  <td className={cn(
+                    "px-3 py-1.5 text-right tabular-nums",
+                    stock === 0 ? "text-red-500" : "text-zinc-600",
+                  )}>
+                    {stock === 0 ? "0" : stock}
                   </td>
                   <td className="px-3 py-1.5">
                     <Input
@@ -371,12 +402,17 @@ export function NewSaleForm({
             </div>
             <Button
               type="submit"
-              disabled={pending || skus.length === 0}
-              className="w-full md:w-auto"
+              disabled={pending || activeSkus.length === 0}
+              className={cn(
+                "w-full md:w-auto",
+                preOrder && "bg-blue-600 hover:bg-blue-700",
+              )}
             >
               {pending
                 ? "Creating..."
-                : `Create invoice • ${formatLkr(totals.grandTotal)}`}
+                : preOrder
+                  ? `Create pre-order invoice • ${formatLkr(totals.grandTotal)}`
+                  : `Create invoice • ${formatLkr(totals.grandTotal)}`}
             </Button>
           </div>
         </div>
