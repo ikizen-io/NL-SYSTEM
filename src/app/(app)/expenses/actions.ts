@@ -1,6 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
+import { paymentMethodValues } from "@/lib/payment-methods";
 import { PaymentMethod } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
@@ -15,7 +16,7 @@ const expenseSchema = z.object({
   category: z.string().min(1).max(50),
   description: z.string().min(1).max(200),
   amount: z.coerce.number().int().positive(),
-  paymentMethod: z.enum(["BANK", "CASH", "COD", "TRANSFER", "OTHER"]),
+  paymentMethod: z.enum(paymentMethodValues),
   notes: z.string().max(500).optional().or(z.literal("")),
 });
 

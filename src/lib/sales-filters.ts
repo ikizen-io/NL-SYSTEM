@@ -1,5 +1,6 @@
 import type { Prisma } from "@prisma/client";
 import { invoiceFinancials } from "@/lib/invoices";
+import type { PaymentMethodValue } from "@/lib/payment-methods";
 
 export type SalesFilterParams = {
   q?: string;
@@ -62,7 +63,7 @@ export function buildSalesInvoiceWhere(
   if (filters.payMethod !== "all") {
     clauses.push({
       payments: {
-        some: { method: filters.payMethod as "BANK" | "CASH" | "COD" | "TRANSFER" | "OTHER" },
+        some: { method: filters.payMethod as PaymentMethodValue },
       },
     });
   }

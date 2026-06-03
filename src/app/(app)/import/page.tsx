@@ -62,7 +62,7 @@ export default function ImportPage() {
             </p>
             <ImportExpensesForm />
             <p className="text-xs text-zinc-500">
-              `paymentMethod` must be one of: BANK, CASH, TRANSFER, COD, OTHER.
+              `paymentMethod` must be one of: BANK, CASH, TRANSFER, COD, KOKO, OTHER.
             </p>
           </CardContent>
         </Card>

@@ -6,8 +6,10 @@ import { Combobox } from "@/components/ui/combobox";
 import { CustomerFields, type CustomerOption } from "@/components/ui/customer-fields";
 import { ActionStateBanner, FormFooter, FormSection } from "@/components/ui/form-patterns";
 import { Input, Label, Textarea } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 import { formatLkr } from "@/lib/format";
 import { safeInt } from "@/lib/forms";
+import { paymentMethodOptions, type PaymentMethodValue } from "@/lib/payment-methods";
 import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { updateInvoice } from "./actions";
@@ -29,6 +31,7 @@ type InvoiceEditFormProps = {
     customerAddress: string;
     shippingCharge: number;
     discountAmount: number;
+    preferredPaymentMethod: PaymentMethodValue;
     notes: string;
     status: string;
     items: EditableItem[];
@@ -165,6 +168,20 @@ export function InvoiceEditForm({
           <div className="flex h-10 items-center rounded-xl border border-zinc-200 bg-zinc-50 px-3 text-sm font-semibold">
             {formatLkr(totals.balance)}
           </div>
+        </div>
+        <div className="md:col-span-2">
+          <Label>Invoice payment option</Label>
+          <Select
+            name="preferredPaymentMethod"
+            defaultValue={invoice.preferredPaymentMethod}
+            disabled={disabled}
+          >
+            {paymentMethodOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </Select>
         </div>
         <div className="md:col-span-3">
           <Label>Notes</Label>

@@ -2,6 +2,7 @@
 
 import Papa from "papaparse";
 import { prisma } from "@/lib/prisma";
+import { paymentMethodValues } from "@/lib/payment-methods";
 import { PaymentMethod } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
@@ -28,7 +29,7 @@ const expenseRowSchema = z.object({
   category: z.string().min(1),
   description: z.string().min(1),
   amount: z.coerce.number().int().positive(),
-  paymentMethod: z.enum(["BANK", "CASH", "COD", "TRANSFER", "OTHER"]),
+  paymentMethod: z.enum(paymentMethodValues),
   notes: z.string().optional().or(z.literal("")),
 });
 

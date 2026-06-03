@@ -7,13 +7,14 @@ import { ActionStateBanner } from "@/components/ui/form-patterns";
 import { Input, Label } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { formatLkr } from "@/lib/format";
+import { paymentMethodOptions, type PaymentMethodValue } from "@/lib/payment-methods";
 import { toast } from "sonner";
 import { deletePayment, updatePayment } from "./actions";
 
 type Payment = {
   id: string;
   date: string;
-  method: "BANK" | "CASH" | "COD" | "TRANSFER" | "OTHER";
+  method: PaymentMethodValue;
   amount: number;
   reference: string;
 };
@@ -49,11 +50,11 @@ function PaymentRow({
         <div className="md:col-span-2">
           <Label>Method</Label>
           <Select name="method" defaultValue={payment.method} disabled={disabled}>
-            <option value="BANK">Bank</option>
-            <option value="CASH">Cash</option>
-            <option value="TRANSFER">Transfer</option>
-            <option value="COD">COD</option>
-            <option value="OTHER">Other</option>
+            {paymentMethodOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
           </Select>
         </div>
         <div className="md:col-span-2">

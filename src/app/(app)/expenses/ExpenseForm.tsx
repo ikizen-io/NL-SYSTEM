@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ActionStateBanner } from "@/components/ui/form-patterns";
 import { Input, Label } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
+import { paymentMethodOptions } from "@/lib/payment-methods";
 import { toast } from "sonner";
 import { createExpense } from "./actions";
 
@@ -45,11 +46,11 @@ export function ExpenseForm() {
       <div className="md:col-span-1">
         <Label>Payment</Label>
         <Select name="paymentMethod" defaultValue="BANK">
-          <option value="BANK">Bank</option>
-          <option value="CASH">Cash</option>
-          <option value="TRANSFER">Transfer</option>
-          <option value="COD">COD</option>
-          <option value="OTHER">Other</option>
+          {paymentMethodOptions.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
         </Select>
       </div>
       <div className="md:col-span-5">

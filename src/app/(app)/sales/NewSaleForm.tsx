@@ -12,6 +12,7 @@ import { Select } from "@/components/ui/select";
 import { formatLkr } from "@/lib/format";
 import { safeInt } from "@/lib/forms";
 import { cn } from "@/lib/cn";
+import { paymentMethodOptions } from "@/lib/payment-methods";
 import { Plus, Trash2, PackageSearch } from "lucide-react";
 import { toast } from "sonner";
 import { createSale, type SaleActionState } from "./actions";
@@ -366,13 +367,13 @@ export function NewSaleForm({
             />
           </div>
           <div className="md:col-span-2">
-            <Label>Payment method</Label>
-            <Select name="paymentMethod" defaultValue="BANK">
-              <option value="BANK">Bank</option>
-              <option value="CASH">Cash</option>
-              <option value="TRANSFER">Transfer</option>
-              <option value="COD">COD</option>
-              <option value="OTHER">Other</option>
+            <Label>Invoice payment option</Label>
+            <Select name="preferredPaymentMethod" defaultValue="BANK">
+              {paymentMethodOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
             </Select>
           </div>
           <div className="md:col-span-3">

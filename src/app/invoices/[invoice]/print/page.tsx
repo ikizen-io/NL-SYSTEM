@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { formatLkr } from "@/lib/format";
+import { paymentMethodLabel } from "@/lib/payment-methods";
 import { Badge } from "@/components/ui/badge";
 import { PrintButton } from "./PrintButton";
 
@@ -18,14 +19,6 @@ function invoiceLookup(invoice: string) {
     },
   };
 }
-
-const PAYMENT_METHOD_LABEL: Record<string, string> = {
-  BANK: "Bank transfer",
-  CASH: "Cash",
-  COD: "Cash on delivery",
-  TRANSFER: "Transfer",
-  OTHER: "Other",
-};
 
 type StatusKey = "PAID" | "ISSUED" | "VOID" | "RETURNED";
 
@@ -110,6 +103,14 @@ export default async function PrintableInvoicePage({
                 <span className="font-semibold text-zinc-950">Date issued:</span>{" "}
                 {inv.issuedDate.toISOString().slice(0, 10)}
               </div>
+              {inv.preferredPaymentMethod ? (
+                <div>
+                  <span className="font-semibold text-zinc-950">
+                    Payment option:
+                  </span>{" "}
+                  {paymentMethodLabel(inv.preferredPaymentMethod)}
+                </div>
+              ) : null}
               <div className="flex items-center gap-2">
                 <span className="font-semibold text-zinc-950">Status:</span>
                 <Badge
@@ -313,7 +314,7 @@ export default async function PrintableInvoicePage({
                       {payment.date.toISOString().slice(0, 10)}
                     </td>
                     <td className="border-b border-zinc-100 px-3 py-2 text-zinc-700">
-                      {PAYMENT_METHOD_LABEL[payment.method] ?? payment.method}
+                      {paymentMethodLabel(payment.method)}
                     </td>
                     <td className="border-b border-zinc-100 px-3 py-2 text-zinc-600">
                       {payment.reference || "—"}

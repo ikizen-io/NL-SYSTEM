@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { formatInvoiceNo, invoiceYearKey } from "@/lib/format";
 import { effectiveUnitCost } from "@/lib/costing";
+import { paymentMethodValues } from "@/lib/payment-methods";
 import { PaymentMethod } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
@@ -36,7 +37,8 @@ const saleSchema = z.object({
   items: z.array(saleItemSchema).min(1),
   shippingCharge: optionalMoney(z.coerce.number().int().nonnegative()),
   discountAmount: optionalMoney(z.coerce.number().int().nonnegative()),
-  paymentMethod: z.enum(["BANK", "CASH", "COD", "TRANSFER", "OTHER"]).optional(),
+  preferredPaymentMethod: z.enum(paymentMethodValues).optional(),
+  paymentMethod: z.enum(paymentMethodValues).optional(),
   paymentAmount: optionalMoney(z.coerce.number().int().positive()),
 });
 
@@ -102,6 +104,7 @@ export async function createSale(
     items,
     shippingCharge: formData.get("shippingCharge"),
     discountAmount: formData.get("discountAmount"),
+    preferredPaymentMethod: formData.get("preferredPaymentMethod"),
     paymentMethod: formData.get("paymentMethod"),
     paymentAmount: formData.get("paymentAmount"),
   });
@@ -208,6 +211,7 @@ export async function createSale(
           status: "ISSUED",
           shippingCharge,
           discountAmount,
+          preferredPaymentMethod: v.preferredPaymentMethod as PaymentMethod,
           customerId: customer.id,
           items: {
             create: v.items.map((it) => {
@@ -236,8 +240,9 @@ export async function createSale(
         select: { id: true },
       });
 
+      const paymentMethod = v.paymentMethod ?? v.preferredPaymentMethod;
       if (
-        v.paymentMethod &&
+        paymentMethod &&
         Number.isFinite(v.paymentAmount as number) &&
         Number(v.paymentAmount) > 0
       ) {
@@ -245,7 +250,7 @@ export async function createSale(
           data: {
             invoiceId: invoice.id,
             date: issuedDate,
-            method: v.paymentMethod as PaymentMethod,
+            method: paymentMethod as PaymentMethod,
             amount: Number(v.paymentAmount),
           },
         });

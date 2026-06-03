@@ -20,6 +20,7 @@ enum PaymentMethod {
   CASH
   COD
   TRANSFER
+  KOKO
   OTHER
 }
 
@@ -81,6 +82,7 @@ model Invoice {
   status     InvoiceStatus @default(ISSUED)
   shippingCharge Int       @default(0)
   discountAmount Int       @default(0)
+  preferredPaymentMethod PaymentMethod?
 
   customerId String?
   customer   Customer?     @relation(fields: [customerId], references: [id], onDelete: SetNull)

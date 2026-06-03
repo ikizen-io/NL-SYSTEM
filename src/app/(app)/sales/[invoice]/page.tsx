@@ -14,6 +14,7 @@ import { Page, PageActions, PageDescription, PageHeader, PageTitle } from "@/com
 import { ArrowLeft, Printer } from "lucide-react";
 import { formatLkr } from "@/lib/format";
 import { cn } from "@/lib/cn";
+import { paymentMethodLabel } from "@/lib/payment-methods";
 import { AddPaymentForm } from "./AddPaymentForm";
 import { InvoiceDetailTabs } from "./InvoiceDetailTabs";
 import { InvoiceEditForm } from "./InvoiceEditForm";
@@ -194,6 +195,17 @@ export default async function InvoiceDetailPage({
               Paid{" "}
               <span className="font-medium text-zinc-800">{formatLkr(stats.paid)}</span>
             </span>
+            {inv.preferredPaymentMethod && (
+              <>
+                <span className="text-zinc-300">·</span>
+                <span>
+                  Payment option{" "}
+                  <span className="font-medium text-zinc-800">
+                    {paymentMethodLabel(inv.preferredPaymentMethod)}
+                  </span>
+                </span>
+              </>
+            )}
             {stats.balance > 0 && (
               <>
                 <span className="text-zinc-300">·</span>
@@ -257,6 +269,7 @@ export default async function InvoiceDetailPage({
                   customerAddress: inv.customer?.address ?? "",
                   shippingCharge: inv.shippingCharge,
                   discountAmount: inv.discountAmount,
+                  preferredPaymentMethod: inv.preferredPaymentMethod ?? "BANK",
                   notes: inv.notes ?? "",
                   status: inv.status,
                   items: inv.items.map((item) => ({

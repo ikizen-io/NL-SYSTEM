@@ -7,6 +7,7 @@ import { Input, Label } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { formatLkr } from "@/lib/format";
 import { safeInt } from "@/lib/forms";
+import { paymentMethodOptions } from "@/lib/payment-methods";
 import { toast } from "sonner";
 import { addPayment } from "./actions";
 
@@ -45,11 +46,11 @@ export function AddPaymentForm({
       <div>
         <Label>Method</Label>
         <Select name="method" defaultValue="BANK" disabled={disabled}>
-          <option value="BANK">Bank</option>
-          <option value="CASH">Cash</option>
-          <option value="TRANSFER">Transfer</option>
-          <option value="COD">COD</option>
-          <option value="OTHER">Other</option>
+          {paymentMethodOptions.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
         </Select>
       </div>
       <div>

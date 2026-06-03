@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { cn } from "@/lib/cn";
+import { paymentMethodOptions } from "@/lib/payment-methods";
 import { X } from "lucide-react";
 
 export type SalesFilterValues = {
@@ -184,11 +185,11 @@ export function SalesLedgerFilters({
               className="h-8 text-sm"
             >
               <option value="all">Any method</option>
-              <option value="BANK">Bank</option>
-              <option value="CASH">Cash</option>
-              <option value="TRANSFER">Transfer</option>
-              <option value="COD">COD</option>
-              <option value="OTHER">Other</option>
+              {paymentMethodOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
             </Select>
           </div>
 

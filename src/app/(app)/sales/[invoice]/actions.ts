@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { effectiveUnitCost } from "@/lib/costing";
 import { invoiceFinancials, invoiceFinancialsFromRecord } from "@/lib/invoices";
 import { toReturnRecordInput } from "@/lib/invoice-queries";
+import { paymentMethodValues } from "@/lib/payment-methods";
 import {
   availableReturnQty,
   type ReturnRecordInput,
@@ -27,7 +28,7 @@ export type ReturnActionState = {
   error?: string;
 };
 
-const paymentMethods = ["BANK", "CASH", "COD", "TRANSFER", "OTHER"] as const;
+const paymentMethods = paymentMethodValues;
 
 const optionalText = (max: number) =>
   z.preprocess(
@@ -57,6 +58,7 @@ const updateInvoiceSchema = z.object({
   customerAddress: optionalText(240),
   shippingCharge: optionalMoney(z.coerce.number().int().nonnegative()),
   discountAmount: optionalMoney(z.coerce.number().int().nonnegative()),
+  preferredPaymentMethod: z.enum(paymentMethods),
   items: z.array(invoiceItemSchema).min(1),
   notes: optionalText(500),
 });
@@ -335,6 +337,7 @@ export async function updateInvoice(
     customerAddress: formData.get("customerAddress"),
     shippingCharge: formData.get("shippingCharge"),
     discountAmount: formData.get("discountAmount"),
+    preferredPaymentMethod: formData.get("preferredPaymentMethod"),
     notes: formData.get("notes"),
     items,
   });
@@ -477,6 +480,7 @@ export async function updateInvoice(
           customerId: customer.id,
           shippingCharge,
           discountAmount,
+          preferredPaymentMethod: v.preferredPaymentMethod as PaymentMethod,
           notes: v.notes?.trim() || null,
           items: {
             deleteMany: {},
