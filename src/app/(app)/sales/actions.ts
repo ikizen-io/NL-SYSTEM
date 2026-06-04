@@ -22,6 +22,11 @@ const saleItemSchema = z.object({
 const optionalMoney = (schema: z.ZodType<number>) =>
   z.preprocess((value) => (value === "" || value == null ? undefined : value), schema.optional());
 
+const optionalPaymentMethod = z.preprocess(
+  (value) => (value === "" || value == null ? undefined : value),
+  z.enum(paymentMethodValues).optional(),
+);
+
 const optionalText = (max: number) =>
   z.preprocess(
     (value) => (value == null ? "" : value),
@@ -38,7 +43,7 @@ const saleSchema = z.object({
   shippingCharge: optionalMoney(z.coerce.number().int().nonnegative()),
   discountAmount: optionalMoney(z.coerce.number().int().nonnegative()),
   preferredPaymentMethod: z.enum(paymentMethodValues).optional(),
-  paymentMethod: z.enum(paymentMethodValues).optional(),
+  paymentMethod: optionalPaymentMethod,
   paymentAmount: optionalMoney(z.coerce.number().int().positive()),
 });
 
