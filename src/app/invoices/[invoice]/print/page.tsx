@@ -136,8 +136,8 @@ export default async function PrintableInvoicePage({
           </div>
         </header>
 
-        <section className="grid gap-6 py-8 md:grid-cols-5">
-          <div className="md:col-span-3">
+        <section className="grid gap-6 py-8 md:grid-cols-5 print:grid-cols-5">
+          <div className="md:col-span-3 print:col-span-3">
             <div className="text-xs font-semibold uppercase tracking-[0.24em] text-zinc-500">
               Issued To
             </div>
@@ -172,9 +172,9 @@ export default async function PrintableInvoicePage({
             ) : null}
           </div>
 
-          <div className="md:col-span-2">
+          <div className="md:col-span-2 print:col-span-2">
             {statusKey === "PAID" ? (
-              <div className="flex h-full flex-col justify-between rounded-2xl bg-emerald-600 p-5 text-white">
+              <div className="print-exact flex h-full flex-col justify-between rounded-2xl bg-emerald-600 p-5 text-white">
                 <div className="text-xs font-semibold uppercase tracking-[0.24em] text-emerald-100">
                   Status
                 </div>
@@ -191,7 +191,7 @@ export default async function PrintableInvoicePage({
                 </div>
               </div>
             ) : statusKey === "VOID" ? (
-              <div className="flex h-full flex-col justify-between rounded-2xl bg-zinc-200 p-5 text-zinc-700">
+              <div className="print-exact flex h-full flex-col justify-between rounded-2xl bg-zinc-200 p-5 text-zinc-700">
                 <div className="text-xs font-semibold uppercase tracking-[0.24em]">
                   Status
                 </div>
@@ -201,7 +201,7 @@ export default async function PrintableInvoicePage({
                 </div>
               </div>
             ) : (
-              <div className="flex h-full flex-col justify-between rounded-2xl bg-zinc-950 p-5 text-white">
+              <div className="print-exact flex h-full flex-col justify-between rounded-2xl bg-zinc-950 p-5 text-white">
                 <div className="text-xs font-semibold uppercase tracking-[0.24em] text-zinc-400">
                   Amount Due
                 </div>
@@ -385,7 +385,7 @@ function TotalRow({
 }) {
   if (dark) {
     return (
-      <div className="flex items-center justify-between bg-zinc-950 px-4 py-3 text-white">
+      <div className="print-exact flex items-center justify-between bg-zinc-950 px-4 py-3 text-white">
         <span className="font-semibold text-white">{label}</span>
         <span className="font-semibold tabular-nums text-white">{value}</span>
       </div>
