@@ -65,6 +65,18 @@ input[type="number"] {
   print-color-adjust: exact;
 }
 
+@media print {
+  .print-break-before-page {
+    break-before: page;
+    page-break-before: always;
+  }
+
+  .print-avoid-break {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}
+
 ::-webkit-scrollbar {
   height: 10px;
   width: 10px;

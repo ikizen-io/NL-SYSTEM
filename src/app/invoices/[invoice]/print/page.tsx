@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { formatLkr } from "@/lib/format";
 import { paymentMethodLabel } from "@/lib/payment-methods";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/cn";
 import { PrintButton } from "./PrintButton";
 
 export const dynamic = "force-dynamic";
@@ -76,8 +77,15 @@ export default async function PrintableInvoicePage({
     .map((line) => line.trim())
     .filter(Boolean);
 
+  // Push bank/contact footer to page 2 only when the core invoice is long.
+  const appendixOnNewPage =
+    inv.items.length > 4 ||
+    inv.payments.length > 2 ||
+    (inv.notes?.length ?? 0) > 180 ||
+    addressLines.length > 3;
+
   return (
-    <main className="min-h-screen bg-zinc-100 px-4 py-6 text-zinc-950 print:bg-white print:p-0">
+    <main className="min-h-screen bg-zinc-100 px-4 py-6 text-zinc-950 print:min-h-0 print:bg-white print:p-0">
       <div className="mx-auto mb-4 flex max-w-[820px] items-center justify-between print:hidden">
         <Link prefetch={false}
           href={`/sales/${encodeURIComponent(decoded.replace("#", ""))}`}
@@ -88,8 +96,8 @@ export default async function PrintableInvoicePage({
         <PrintButton />
       </div>
 
-      <section className="mx-auto max-w-[820px] bg-white p-10 text-zinc-950 shadow-xl print:min-h-screen print:max-w-none print:p-10 print:shadow-none">
-        <header className="flex items-start justify-between gap-8 border-b border-zinc-200 pb-8">
+      <section className="mx-auto max-w-[820px] bg-white p-10 text-zinc-950 shadow-xl print:max-w-none print:p-8 print:shadow-none">
+        <header className="print-avoid-break flex items-start justify-between gap-8 border-b border-zinc-200 pb-8 print:pb-6">
           <div>
             <div className="text-5xl font-light tracking-[0.35em] text-zinc-950">
               INVOICE
@@ -136,7 +144,7 @@ export default async function PrintableInvoicePage({
           </div>
         </header>
 
-        <section className="grid gap-6 py-8 md:grid-cols-5 print:grid-cols-5">
+        <section className="print-avoid-break grid gap-6 py-8 md:grid-cols-5 print:grid-cols-5 print:py-6">
           <div className="md:col-span-3 print:col-span-3">
             <div className="text-xs font-semibold uppercase tracking-[0.24em] text-zinc-500">
               Issued To
@@ -261,7 +269,7 @@ export default async function PrintableInvoicePage({
           </tbody>
         </table>
 
-        <section className="mt-8 flex justify-end">
+        <section className="print-avoid-break mt-8 flex justify-end print:mt-6">
           <div className="w-full max-w-sm overflow-hidden rounded-2xl border border-zinc-200">
             <TotalRow label="Items total" value={formatLkr(itemsTotal)} />
             {inv.shippingCharge > 0 ? (
@@ -286,7 +294,7 @@ export default async function PrintableInvoicePage({
         </section>
 
         {inv.payments.length > 0 ? (
-          <section className="mt-8">
+          <section className="print-avoid-break mt-8 print:mt-6">
             <div className="text-xs font-semibold uppercase tracking-[0.24em] text-zinc-500">
               Payments Received
             </div>
@@ -330,7 +338,7 @@ export default async function PrintableInvoicePage({
         ) : null}
 
         {inv.notes ? (
-          <section className="mt-8 rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-700">
+          <section className="print-avoid-break mt-8 rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-700 print:mt-6">
             <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-zinc-500">
               Notes
             </div>
@@ -340,31 +348,38 @@ export default async function PrintableInvoicePage({
           </section>
         ) : null}
 
-        <section className="mt-10 grid gap-8 border-t border-zinc-200 pt-8 md:grid-cols-2">
-          <div>
-            <div className="text-xs font-semibold uppercase tracking-[0.24em] text-zinc-500">
-              Payment Information
+        <div
+          className={cn(
+            "print-avoid-break mt-10 print:mt-6",
+            appendixOnNewPage && "print-break-before-page",
+          )}
+        >
+          <section className="grid gap-8 border-t border-zinc-200 pt-8 md:grid-cols-2 print:pt-6">
+            <div>
+              <div className="text-xs font-semibold uppercase tracking-[0.24em] text-zinc-500">
+                Payment Information
+              </div>
+              <div className="mt-3 grid gap-1 text-sm text-zinc-800">
+                <div>Bank Name: Commercial Bank</div>
+                <div>Bank Branch: Maradana</div>
+                <div>Account No: 8017975618</div>
+              </div>
             </div>
-            <div className="mt-3 grid gap-1 text-sm text-zinc-800">
-              <div>Bank Name: Commercial Bank</div>
-              <div>Bank Branch: Maradana</div>
-              <div>Account No: 8017975618</div>
+            <div>
+              <div className="text-xs font-semibold uppercase tracking-[0.24em] text-zinc-500">
+                Contact
+              </div>
+              <div className="mt-3 grid gap-1 text-sm text-zinc-800">
+                <div>WhatsApp: +94 71 520 8881</div>
+                <div>Instagram: @nitro.labs</div>
+              </div>
             </div>
-          </div>
-          <div>
-            <div className="text-xs font-semibold uppercase tracking-[0.24em] text-zinc-500">
-              Contact
-            </div>
-            <div className="mt-3 grid gap-1 text-sm text-zinc-800">
-              <div>WhatsApp: +94 71 520 8881</div>
-              <div>Instagram: @nitro.labs</div>
-            </div>
-          </div>
-        </section>
+          </section>
 
-        <footer className="mt-10 text-center text-xs text-zinc-500">
-          Thank you for shopping with Nitro Labs.
-        </footer>
+          <footer className="mt-10 text-center text-xs text-zinc-500 print:mt-8">
+            Thank you for shopping with Nitro Labs.
+          </footer>
+        </div>
       </section>
     </main>
   );
