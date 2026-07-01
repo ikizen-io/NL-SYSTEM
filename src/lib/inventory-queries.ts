@@ -19,6 +19,7 @@ export const variantStockSelect = {
   color: true,
   active: true,
   targetPrice: true,
+  imageUrl: true,
   product: { select: { brand: true, category: true, modelName: true } },
   stockIns: variantStockInclude.stockIns,
   adjustments: variantStockInclude.adjustments,

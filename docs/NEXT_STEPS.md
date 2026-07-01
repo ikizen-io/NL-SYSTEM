@@ -24,10 +24,11 @@ This is being worked through as the "Phased ERP Polish Upgrade" plan, in order:
 
 ## Phase 3 — Product Photos
 
-- [ ] Add an optional `imageUrl` field (Variant or Product — decide during implementation) via a tracked Prisma migration.
-- [ ] Storage: Supabase Storage (recommended, reuses the existing Supabase project) vs. Vercel Blob — confirm before implementation.
-- [ ] Upload UI on Create/Edit SKU forms.
-- [ ] Thumbnails in the inventory table, SKU picker comboboxes, and optionally the printable invoice.
+- [x] Added an optional `Variant.imageUrl` field via Prisma schema + migration.
+- [x] Storage: Supabase Storage, using the existing project's own `sku-photos` bucket (public read, anon-scoped insert/update/delete via RLS policies limited to that one bucket — see `src/lib/storage.ts`). Implemented against the plain Storage REST API via `fetch`, so no new npm dependency was needed.
+- [x] Upload UI (with preview, replace, and remove) on Create/Edit SKU forms.
+- [x] Thumbnails in the inventory table and the SKU picker comboboxes (New Sale, Receive Purchase). Printable invoice line-item thumbnails were left out (explicitly optional in the plan, and would add visual noise to a document meant to stay compact).
+- Note: `SUPABASE_URL` / `SUPABASE_STORAGE_KEY` must be set (see `.env.example`) or the upload UI silently no-ops (SKU save still succeeds without a photo).
 
 ## Phase 4 — Dashboard Period Comparison
 
@@ -38,6 +39,7 @@ This is being worked through as the "Phased ERP Polish Upgrade" plan, in order:
 - **Low-stock threshold**: currently a flat "≤ 1 unit" cutoff in `/reports` (`src/app/(app)/reports/page.tsx`) for every SKU. A per-variant reorder point would make the report meaningful for fast- vs. slow-moving sizes/colorways. Explicitly deferred — revisit when prioritizing inventory depth again.
 - Rate limiting / login attempt throttling on `/api/auth/login`.
 - Scheduled/automated backup job (beyond manually visiting `/backup` or relying on Supabase PITR).
+- **Prisma migration history drift**: `prisma migrate status` shows none of the 3 existing migrations as applied against the live DB — the actual schema was kept in sync via `prisma db push` (and/or direct SQL), not `prisma migrate deploy`. `migration_lock.toml` had also drifted to say `sqlite` (fixed alongside the `imageUrl` migration). `prisma migrate dev` won't work cleanly until the very first migration (`20260429132702_init`, written for SQLite) is rewritten for Postgres or the migration history is re-baselined with `prisma migrate resolve`. Until then, keep using `prisma db push` for schema changes and hand-write the matching `migration.sql` file for history/documentation.
 
 ## Audit Trail Principles
 

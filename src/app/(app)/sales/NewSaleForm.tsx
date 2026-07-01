@@ -23,6 +23,7 @@ type SaleSku = {
   label: string;
   targetPrice: number | null;
   stock: number;
+  imageUrl: string | null;
 };
 type CustomerOption = {
   name: string;
@@ -103,6 +104,7 @@ export function NewSaleForm({
         value: sku.sku,
         label: sku.label,
         description: sku.stock > 0 ? `${sku.stock} in stock` : "Out of stock",
+        imageUrl: sku.imageUrl,
       })),
     [activeSkus],
   );

@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
+import { ImagePlus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 import { CreatableCombobox } from "@/components/ui/creatable-combobox";
@@ -22,6 +23,7 @@ export function EditSkuForm({
     sizeLabel: string;
     color: string | null;
     targetPrice: number | null;
+    imageUrl: string | null;
     product: {
       brand: string;
       category: string;
@@ -48,10 +50,39 @@ export function EditSkuForm({
 
   const [brand, setBrand] = useState(variant.product.brand);
   const [category, setCategory] = useState(variant.product.category);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [removeExistingPhoto, setRemoveExistingPhoto] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (state.ok) toast.success("SKU updated");
   }, [state.ok]);
+
+  useEffect(() => {
+    return () => {
+      if (photoPreview) URL.revokeObjectURL(photoPreview);
+    };
+  }, [photoPreview]);
+
+  function handlePhotoChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (photoPreview) URL.revokeObjectURL(photoPreview);
+    setPhotoPreview(file ? URL.createObjectURL(file) : null);
+    if (file) setRemoveExistingPhoto(false);
+  }
+
+  function clearNewPhoto() {
+    if (photoPreview) URL.revokeObjectURL(photoPreview);
+    setPhotoPreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }
+
+  function removeExisting() {
+    clearNewPhoto();
+    setRemoveExistingPhoto(true);
+  }
+
+  const displayedPhoto = photoPreview ?? (removeExistingPhoto ? null : variant.imageUrl);
 
   return (
     <form action={formAction} className="grid gap-3 md:grid-cols-2">
@@ -109,6 +140,41 @@ export function EditSkuForm({
           step={1}
           defaultValue={variant.targetPrice ?? ""}
         />
+      </div>
+
+      <div className="md:col-span-2">
+        <Label>Photo</Label>
+        <input type="hidden" name="removePhoto" value={removeExistingPhoto ? "true" : "false"} />
+        <div className="flex items-center gap-3">
+          {displayedPhoto ? (
+            <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-zinc-200">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={displayedPhoto} alt="" className="h-full w-full object-cover" />
+              <button
+                type="button"
+                onClick={photoPreview ? clearNewPhoto : removeExisting}
+                className="absolute right-0.5 top-0.5 rounded-full bg-black/60 p-0.5 text-white hover:bg-black/80"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+          ) : (
+            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg border border-dashed border-zinc-300 text-zinc-400">
+              <ImagePlus className="h-5 w-5" />
+            </div>
+          )}
+          <Input
+            ref={fileInputRef}
+            name="photo"
+            type="file"
+            accept="image/png,image/jpeg,image/webp,image/gif"
+            onChange={handlePhotoChange}
+            className="max-w-xs"
+          />
+        </div>
+        <div className="mt-1 text-[11px] text-zinc-500">
+          Optional. JPEG, PNG, WEBP, or GIF, up to 5 MB.
+        </div>
       </div>
 
       {latestStockIn ? (

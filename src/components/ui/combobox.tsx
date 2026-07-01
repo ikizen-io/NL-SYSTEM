@@ -18,6 +18,7 @@ export type ComboboxOption = {
   value: string;
   label: string;
   description?: string;
+  imageUrl?: string | null;
 };
 
 export function Combobox({
@@ -53,8 +54,18 @@ export function Combobox({
           disabled={disabled}
           className={cn("w-full justify-between px-3 font-normal", className)}
         >
-          <span className="truncate">
-            {selected ? selected.label : placeholder}
+          <span className="flex min-w-0 items-center gap-2">
+            {selected?.imageUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={selected.imageUrl}
+                alt=""
+                className="h-5 w-5 shrink-0 rounded object-cover"
+              />
+            ) : null}
+            <span className="truncate">
+              {selected ? selected.label : placeholder}
+            </span>
           </span>
           <ChevronsUpDown className="h-3.5 w-3.5 shrink-0 text-zinc-400" />
         </Button>
@@ -76,10 +87,18 @@ export function Combobox({
                 >
                   <Check
                     className={cn(
-                      "h-4 w-4",
+                      "h-4 w-4 shrink-0",
                       value === option.value ? "opacity-100" : "opacity-0",
                     )}
                   />
+                  {option.imageUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={option.imageUrl}
+                      alt=""
+                      className="h-6 w-6 shrink-0 rounded object-cover"
+                    />
+                  ) : null}
                   <span className="min-w-0 flex-1 truncate">{option.label}</span>
                   {option.description ? (
                     <span className="shrink-0 text-xs text-zinc-500">

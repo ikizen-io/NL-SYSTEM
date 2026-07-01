@@ -17,6 +17,7 @@ type ExistingSku = {
   label: string;
   targetPrice: number | null;
   stock: number;
+  imageUrl?: string | null;
 };
 
 type Supplier = { id: string; name: string };
@@ -376,6 +377,7 @@ function ExistingLineFields({
             value: sku.sku,
             label: sku.label,
             description: `${sku.stock} in stock`,
+            imageUrl: sku.imageUrl,
           }))}
           value={line.sku}
           onValueChange={(value) => onChange({ ...line, sku: value })}

@@ -16,6 +16,7 @@ export type InventoryRow = {
   active: boolean;
   unitCost: number;
   targetPrice: number | null;
+  imageUrl: string | null;
   soldQty: number;
   currentStock: number;
   hasHistory: boolean;
@@ -57,6 +58,7 @@ export function computeInventoryRow(variant: {
   color: string | null;
   active: boolean;
   targetPrice: number | null;
+  imageUrl?: string | null;
   product: { brand: string; category: string; modelName: string };
   stockIns: VariantStockSource["stockIns"];
   adjustments: VariantStockSource["adjustments"];
@@ -79,6 +81,7 @@ export function computeInventoryRow(variant: {
     active: variant.active,
     unitCost,
     targetPrice: variant.targetPrice,
+    imageUrl: variant.imageUrl ?? null,
     soldQty: Math.max(0, soldQty),
     currentStock: currentStockQty,
     hasHistory:

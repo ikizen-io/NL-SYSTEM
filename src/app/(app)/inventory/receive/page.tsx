@@ -56,6 +56,7 @@ export default async function ReceivePurchasePage() {
     label: `${variant.sku} — ${variant.product.brand} / ${variant.product.modelName} / ${variant.sizeLabel}${variant.color ? ` / ${variant.color}` : ""}`,
     targetPrice: variant.targetPrice,
     stock: currentStock(variant),
+    imageUrl: variant.imageUrl,
   }));
 
   const brands = Array.from(

@@ -132,6 +132,7 @@ export default async function SalesPage({
     label: `${variant.sku} — ${variant.product.brand} / ${variant.product.modelName} / ${variant.sizeLabel}${variant.color ? ` / ${variant.color}` : ""}`,
     targetPrice: variant.targetPrice,
     stock: availableStock(variant),
+    imageUrl: variant.imageUrl,
   }));
   const saleSkus = allSaleSkus.filter((sku) => sku.stock > 0);
 

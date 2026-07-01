@@ -41,12 +41,14 @@ Shared code:
 - `src/lib/returns.ts` — return/exchange math (returned qty, refund totals, full-return detection)
 - `src/lib/sales-filters.ts` — Sales Ledger filter parsing and query building
 - `src/lib/payment-methods.ts` — shared payment method values/labels (incl. KOKO Pay)
+- `src/lib/global-search.ts` + `src/app/api/search/route.ts` + `src/components/GlobalSearch.tsx` — Ctrl/Cmd+K palette across customers, invoices, and SKUs
+- `src/lib/storage.ts` — Supabase Storage REST client for SKU photo upload/delete (plain `fetch`, no SDK dependency)
 - `src/lib/backup.ts` — database path resolution, local backup copy, last-backup info
 - `src/lib/export-data.ts` — CSV dataset builders
 - `src/lib/csv.ts` — CSV escaping helpers
 - `src/lib/runtime.ts` — detects SQLite vs. Postgres runtime for backup/UI gating
 - `prisma/schema.prisma` — PostgreSQL schema
-- `prisma/migrations/` — tracked Prisma migrations (not `db push`)
+- `prisma/migrations/` — one hand-maintained `migration.sql` per schema change, for history/documentation. The live DB is actually kept in sync via `prisma db push`, not `prisma migrate deploy` — see `docs/NEXT_STEPS.md` for why.
 
 Tests:
 

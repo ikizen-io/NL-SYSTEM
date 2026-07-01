@@ -24,6 +24,8 @@ Deployed to production on Vercel, backed by Supabase Postgres, behind a single-o
 - Expenses entry and listing.
 - Insights by brand and top customers.
 - CSV import for inventory and expenses, with friendly inline errors and per-row skip reasons (invalid rows are reported, not silently dropped).
+- Global search (Ctrl/Cmd+K or the header button) across customers, invoices, and SKUs.
+- Optional SKU/variant photos: upload, replace, or remove on Create/Edit SKU, with thumbnails in the inventory table and the SKU picker comboboxes.
 
 ### Reliability & UX
 
@@ -68,8 +70,9 @@ Deployed to production on Vercel, backed by Supabase Postgres, behind a single-o
 ### Auth & infrastructure
 
 - Single-owner login gate: `src/middleware.ts` + `src/lib/auth.ts`, signed session cookie, `AUTH_USERNAME`/`AUTH_PASSWORD`/`AUTH_SECRET` env vars.
-- Production database is Supabase Postgres with tracked Prisma migrations (`prisma/migrations/`) — not `db push`.
+- Production database is Supabase Postgres. Schema changes ship via `prisma db push` plus a hand-written `prisma/migrations/<name>/migration.sql` for documentation — `prisma migrate dev`/`deploy` are currently blocked by migration-history drift (see `docs/NEXT_STEPS.md`).
 - Unit tests (`vitest`) cover invoice financials, returns math, stock derivation, unit costing, and the Sales Ledger filter/query builder.
+- Optional SKU/variant photos via Supabase Storage (`sku-photos` bucket, `src/lib/storage.ts`) — needs `SUPABASE_URL`/`SUPABASE_STORAGE_KEY` set or the upload UI just no-ops.
 
 ## Important User Preferences
 
@@ -86,7 +89,7 @@ Deployed to production on Vercel, backed by Supabase Postgres, behind a single-o
 npx next dev --port 3005
 npm run build
 npm run test
-npx prisma migrate deploy
+npx prisma db push
 ```
 
 Production-style local run (serves the last build):
@@ -111,7 +114,7 @@ Typical recovery:
 
 1. Stop the Next dev server.
 2. If needed, find/kill the process using port 3005.
-3. Run `npx prisma migrate dev` or `npx prisma generate`.
+3. Run `npx prisma db push` or `npx prisma generate`.
 4. Restart `npx next dev --port 3005`.
 
 ## Recent Bug Fix Context
@@ -124,7 +127,6 @@ Do not remove this normalization unless replacing it with an equivalent form-sta
 
 See `docs/NEXT_STEPS.md` for the full backlog. Highest-impact remaining items:
 
-- Per-SKU/variant reorder point for a smarter low-stock report (currently a flat "≤ 1 unit" threshold for every SKU).
-- Global/Cmd+K search across customers, invoices, and SKUs.
-- Product photos per SKU/variant.
+- Per-SKU/variant reorder point for a smarter low-stock report (currently a flat "≤ 1 unit" threshold for every SKU). Explicitly deferred by product decision, not forgotten.
 - Dashboard period-over-period comparison.
+- Re-baselining the Prisma migration history so `prisma migrate dev`/`deploy` work again (currently using `prisma db push`).

@@ -17,7 +17,7 @@ Single-owner web system for Nitro Labs, a sportswear shop, replacing a Google Sh
 
 ```bash
 npm install
-npx prisma migrate deploy
+npx prisma generate
 npm run dev
 ```
 
@@ -25,21 +25,17 @@ Open `http://localhost:3000` (or whichever port `next dev` reports).
 
 ## Database
 
-Production and local development both point at Postgres (Supabase). Set `DATABASE_URL` and `DIRECT_URL` in `.env` — see `.env.example` for the format.
+Production and local development both point at the same Postgres (Supabase) instance — there's no separate local database. Set `DATABASE_URL` and `DIRECT_URL` in `.env` — see `.env.example` for the format.
 
-Schema is in `prisma/schema.prisma`. Migrations are tracked in `prisma/migrations/`.
-
-After schema changes:
+Schema is in `prisma/schema.prisma`. `prisma/migrations/` holds one `migration.sql` per schema change for history/documentation, but **use `prisma db push` to actually apply schema changes** right now:
 
 ```bash
-npx prisma migrate dev --name <change-description>
+npx prisma db push
 ```
 
-To apply existing migrations to a fresh environment:
+Then hand-write a matching `prisma/migrations/<timestamp>_<name>/migration.sql` file so the change is documented for the next person (see existing files for the pattern — usually a one-line `ALTER TABLE`).
 
-```bash
-npx prisma migrate deploy
-```
+`prisma migrate dev` / `prisma migrate deploy` don't work cleanly yet: `prisma migrate status` shows the live DB was never tracked through `_prisma_migrations`, and the very first migration file was written for SQLite before the project moved to Postgres. See `docs/NEXT_STEPS.md` ("Prisma migration history drift") before trying to re-baseline this.
 
 On Windows, if Prisma generation fails with `EPERM` on the query engine DLL, stop running Node/Next processes first, then rerun `npx prisma generate`.
 

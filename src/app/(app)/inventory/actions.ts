@@ -3,6 +3,12 @@
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { deleteSkuPhoto, isImageUploadConfigured, uploadSkuPhoto } from "@/lib/storage";
+
+function photoFromFormData(formData: FormData): File | null {
+  const value = formData.get("photo");
+  return value instanceof File && value.size > 0 ? value : null;
+}
 
 export type ActionState = {
   ok?: boolean;
@@ -93,8 +99,10 @@ export async function createSku(
 
   if (!brand || !category) return { error: "Brand and category are required." };
 
+  const photo = photoFromFormData(formData);
+
   try {
-    await prisma.$transaction(async (tx) => {
+    const createdSku = await prisma.$transaction(async (tx) => {
       const product =
         (await tx.product.findFirst({
           where: { brand, category, modelName },
@@ -132,7 +140,29 @@ export async function createSku(
             : null,
         },
       });
+
+      return sku;
     });
+
+    if (photo && isImageUploadConfigured()) {
+      try {
+        const imageUrl = await uploadSkuPhoto(photo, createdSku);
+        await prisma.variant.update({
+          where: { sku: createdSku },
+          data: { imageUrl },
+        });
+      } catch (photoError) {
+        // The SKU itself was created successfully; surface the photo issue
+        // without treating SKU creation as a failure.
+        return {
+          ok: true,
+          error:
+            photoError instanceof Error
+              ? `SKU created, but the photo didn't upload: ${photoError.message}`
+              : "SKU created, but the photo didn't upload.",
+        };
+      }
+    }
   } catch (error) {
     return {
       error:
@@ -708,6 +738,7 @@ const updateSkuSchema = z.object({
   latestStockInId: optionalText(80),
   latestUnitCost: z.coerce.number().int().positive().optional().or(z.nan()),
   latestExtraCost: z.coerce.number().int().nonnegative().optional().or(z.nan()),
+  removePhoto: optionalText(10),
 });
 
 export async function updateSku(
@@ -725,12 +756,14 @@ export async function updateSku(
     latestStockInId: formData.get("latestStockInId"),
     latestUnitCost: formData.get("latestUnitCost"),
     latestExtraCost: formData.get("latestExtraCost"),
+    removePhoto: formData.get("removePhoto"),
   });
   if (!parsed.success) {
     return { error: "Please complete the SKU details." };
   }
 
   const v = parsed.data;
+  const photo = photoFromFormData(formData);
   const variant = await prisma.variant.findFirst({
     where: { sku: v.sku, active: true },
     include: { product: true },
@@ -743,6 +776,22 @@ export async function updateSku(
 
   if (!brand || !category || !modelName) {
     return { error: "Brand, category, and model are required." };
+  }
+
+  let photoWarning: string | undefined;
+  let nextImageUrl: string | null | undefined;
+
+  if (photo && isImageUploadConfigured()) {
+    try {
+      nextImageUrl = await uploadSkuPhoto(photo, variant.sku);
+    } catch (photoError) {
+      photoWarning =
+        photoError instanceof Error
+          ? `Details saved, but the photo didn't upload: ${photoError.message}`
+          : "Details saved, but the photo didn't upload.";
+    }
+  } else if (v.removePhoto === "true" || v.removePhoto === "1") {
+    nextImageUrl = null;
   }
 
   try {
@@ -764,6 +813,7 @@ export async function updateSku(
           targetPrice: Number.isFinite(v.targetPrice as number)
             ? Number(v.targetPrice)
             : null,
+          ...(nextImageUrl !== undefined ? { imageUrl: nextImageUrl } : {}),
         },
       });
 
@@ -799,12 +849,16 @@ export async function updateSku(
     };
   }
 
+  if (nextImageUrl !== undefined && variant.imageUrl && variant.imageUrl !== nextImageUrl) {
+    await deleteSkuPhoto(variant.imageUrl);
+  }
+
   revalidatePath("/inventory");
   revalidatePath(`/inventory/${encodeURIComponent(v.sku)}/edit`);
   revalidatePath("/inventory/receive");
   revalidatePath("/sales");
   revalidatePath("/insights");
-  return { ok: true };
+  return { ok: true, error: photoWarning };
 }
 
 const updateStockInSchema = z.object({

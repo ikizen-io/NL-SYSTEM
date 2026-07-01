@@ -268,11 +268,23 @@ export function InventoryTable({
                       {row.sku}
                     </TD>
                     <TD className="max-w-[260px]">
-                      <div className="truncate font-medium text-zinc-950">
-                        {row.modelName}
-                      </div>
-                      <div className="truncate text-[11px] text-zinc-500">
-                        {row.brand} • {row.category}
+                      <div className="flex items-center gap-2">
+                        {row.imageUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={row.imageUrl}
+                            alt=""
+                            className="h-8 w-8 shrink-0 rounded-md border border-zinc-200 object-cover"
+                          />
+                        ) : null}
+                        <div className="min-w-0">
+                          <div className="truncate font-medium text-zinc-950">
+                            {row.modelName}
+                          </div>
+                          <div className="truncate text-[11px] text-zinc-500">
+                            {row.brand} • {row.category}
+                          </div>
+                        </div>
                       </div>
                     </TD>
                     <TD className="whitespace-nowrap text-zinc-700">
