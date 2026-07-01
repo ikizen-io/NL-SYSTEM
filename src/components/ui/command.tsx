@@ -19,9 +19,16 @@ Command.displayName = CommandPrimitive.displayName;
 
 const CommandInput = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive.Input>,
-  React.ComponentPropsWithoutRef<typeof CommandPrimitive.Input>
->(({ className, ...props }, ref) => (
-  <div className="flex h-10 items-center gap-2 border-b border-zinc-100 px-3">
+  React.ComponentPropsWithoutRef<typeof CommandPrimitive.Input> & {
+    wrapperClassName?: string;
+  }
+>(({ className, wrapperClassName, ...props }, ref) => (
+  <div
+    className={cn(
+      "flex h-10 items-center gap-2 border-b border-zinc-100 px-3",
+      wrapperClassName,
+    )}
+  >
     <Search className="h-4 w-4 shrink-0 text-zinc-400" />
     <CommandPrimitive.Input
       ref={ref}

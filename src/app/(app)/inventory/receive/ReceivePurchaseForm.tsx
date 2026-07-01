@@ -105,8 +105,8 @@ export function ReceivePurchaseForm({
   categories: string[];
 }) {
   const [state, formAction, pending] = useActionState(receivePurchase, {});
-  const [supplierId, setSupplierId] = useState<string>(
-    suppliers[0]?.id ?? "__NEW__",
+  const [supplierName, setSupplierName] = useState<string>(
+    suppliers[0]?.name ?? "",
   );
   const [extraCost, setExtraCost] = useState(0);
   const initialLine: Line =
@@ -128,16 +128,16 @@ export function ReceivePurchaseForm({
     };
   }, [extraCost, lines]);
 
-  const supplierOptions = useMemo(
-    () => [
-      ...suppliers.map((supplier) => ({
-        value: supplier.id,
-        label: supplier.name,
-      })),
-      { value: "__NEW__", label: "+ Add new supplier" },
-    ],
-    [suppliers],
-  );
+  const supplierFields = useMemo(() => {
+    const trimmed = supplierName.trim();
+    if (!trimmed) return { supplierId: "", supplierCustom: "" };
+    const match = suppliers.find(
+      (supplier) => supplier.name.toLowerCase() === trimmed.toLowerCase(),
+    );
+    return match
+      ? { supplierId: match.id, supplierCustom: "" }
+      : { supplierId: "__NEW__", supplierCustom: trimmed };
+  }, [supplierName, suppliers]);
 
   const updateLine = (index: number, updater: (line: Line) => Line) => {
     setLines((prev) => prev.map((line, i) => (i === index ? updater(line) : line)));
@@ -162,23 +162,16 @@ export function ReceivePurchaseForm({
         </div>
         <div>
           <Label>Supplier</Label>
-          <input type="hidden" name="supplierId" value={supplierId} />
-          <Combobox
-            options={supplierOptions}
-            value={supplierId}
-            onValueChange={setSupplierId}
-            placeholder="Select supplier"
-            searchPlaceholder="Search supplier..."
+          <input type="hidden" name="supplierId" value={supplierFields.supplierId} />
+          <input type="hidden" name="supplierCustom" value={supplierFields.supplierCustom} />
+          <CreatableCombobox
+            options={suppliers.map((supplier) => supplier.name)}
+            value={supplierName}
+            onValueChange={setSupplierName}
+            placeholder="Select or type supplier…"
+            searchPlaceholder="Search suppliers…"
+            createPrefix="Add supplier"
           />
-          {supplierId === "__NEW__" ? (
-            <div className="mt-2">
-              <Input
-                name="supplierCustom"
-                placeholder="Supplier name"
-                required
-              />
-            </div>
-          ) : null}
         </div>
         <div>
           <Label>Purchase reference</Label>

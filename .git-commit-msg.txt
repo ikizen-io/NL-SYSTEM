@@ -1,0 +1,7 @@
+Add Cmd+K global search and unify the Supplier picker with CreatableCombobox.
+
+Phase 2 of the ERP polish upgrade: a command-palette style global search
+(customers, invoices, SKUs) reachable via the header button or Ctrl/Cmd+K,
+served by /api/search behind the existing auth middleware; and the Supplier
+picker in ReceivePurchaseForm now uses the same CreatableCombobox pattern as
+Brand/Category, removing the old __NEW__ select + secondary text field.

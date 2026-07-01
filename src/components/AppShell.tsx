@@ -27,6 +27,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { NavigationProgress } from "@/components/NavigationProgress";
+import { GlobalSearch } from "@/components/GlobalSearch";
 import type { DatabaseMode } from "@/lib/runtime";
 
 const navItems = [
@@ -199,6 +200,9 @@ export function AppShell({
                     </>
                   ) : null}
                 </div>
+              </div>
+              <div className="hidden flex-1 justify-center px-4 md:flex">
+                <GlobalSearch />
               </div>
               <div className="hidden items-center gap-2 sm:flex">
                 {quickActions.map((action) => {
