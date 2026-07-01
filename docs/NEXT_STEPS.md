@@ -2,12 +2,14 @@
 
 This file tracks what is still open. For what already ships, see `docs/PROJECT_HANDOFF.md`.
 
-This is being worked through as the "Phased ERP Polish Upgrade" plan, in order:
+This was worked through as the "Phased ERP Polish Upgrade" plan, in order:
 
-1. Correctness & test coverage (this phase)
+1. Correctness & test coverage
 2. Recurring UX friction (global search, supplier picker consistency)
 3. Product photos per SKU
 4. Dashboard period-over-period comparison
+
+All four phases are shipped as of this writing. What's left is the explicitly-deferred low-stock/reorder-point work and a few smaller items below.
 
 ## Phase 1 — Correctness & Test Coverage
 
@@ -32,7 +34,7 @@ This is being worked through as the "Phased ERP Polish Upgrade" plan, in order:
 
 ## Phase 4 — Dashboard Period Comparison
 
-- [ ] "vs previous period" delta badges on dashboard stat cards (same-length range immediately preceding the selected one).
+- [x] "vs previous period" delta badges on dashboard stat cards (`src/lib/dashboard.ts`: `priorPeriodBounds()` + `percentDelta()`, unit-tested). Works for both month mode and custom range mode — the prior window is always the same length, immediately before the selected one. COGS/Expenses invert the up/down color semantics since an increase there is unfavorable.
 
 ## Backlog / Not Yet Scheduled
 

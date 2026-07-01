@@ -54,6 +54,7 @@ Deployed to production on Vercel, backed by Supabase Postgres, behind a single-o
 - Per-SKU stock-in history panel on the edit page, with supplier/details editable per batch.
 - Shared inventory helpers in `src/lib/inventory.ts` (current stock, valuation rows) — covered by unit tests.
 - Reports hub at `/reports`: outstanding balances, low stock (flat threshold, see Next Steps), inventory valuation, cash received vs. revenue, product profitability by brand/model, expenses by category.
+- Dashboard "vs previous period" delta badges on every stat card (`src/lib/dashboard.ts`), comparing against the immediately preceding window of the same length, for both month mode and custom range mode.
 
 ### Returns & exchanges
 
@@ -128,5 +129,4 @@ Do not remove this normalization unless replacing it with an equivalent form-sta
 See `docs/NEXT_STEPS.md` for the full backlog. Highest-impact remaining items:
 
 - Per-SKU/variant reorder point for a smarter low-stock report (currently a flat "≤ 1 unit" threshold for every SKU). Explicitly deferred by product decision, not forgotten.
-- Dashboard period-over-period comparison.
 - Re-baselining the Prisma migration history so `prisma migrate dev`/`deploy` work again (currently using `prisma db push`).
