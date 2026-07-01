@@ -11,7 +11,18 @@ export type ImportActionState = {
   ok?: boolean;
   error?: string;
   imported?: number;
+  skipped?: number;
+  skipReasons?: string[];
 };
+
+const MAX_SKIP_REASONS = 5;
+
+function describeIssues(rowNumber: number, error: z.ZodError) {
+  const first = error.issues[0];
+  const field = first?.path.join(".") || "value";
+  const message = first?.message ?? "invalid value";
+  return `Row ${rowNumber}: ${field} - ${message}`;
+}
 
 const inventoryRowSchema = z.object({
   sku: z.string().min(1),
@@ -64,9 +75,13 @@ export async function importInventory(
   if (rows.length === 0) return { error: "CSV is empty or has no valid rows." };
 
   let imported = 0;
+  const skipReasons: string[] = [];
+  let skipped = 0;
   try {
     await prisma.$transaction(async (tx) => {
-      for (const r of rows) {
+      for (let i = 0; i < rows.length; i++) {
+        const r = rows[i]!;
+        const rowNumber = i + 2; // account for the header row
         const parsed = inventoryRowSchema.safeParse({
           sku: r.sku ?? r.SKU,
           brand: r.brand ?? r.Brand,
@@ -77,7 +92,13 @@ export async function importInventory(
           targetPrice: r.targetPrice ?? r["Target Price (LKR)"] ?? r.target_price,
           openingQty: r.openingQty ?? r["Initial Stock"] ?? r.opening_qty,
         });
-        if (!parsed.success) continue;
+        if (!parsed.success) {
+          skipped++;
+          if (skipReasons.length < MAX_SKIP_REASONS) {
+            skipReasons.push(describeIssues(rowNumber, parsed.error));
+          }
+          continue;
+        }
 
         const v = parsed.data;
         const brand = v.brand.trim();
@@ -126,7 +147,7 @@ export async function importInventory(
 
   revalidatePath("/inventory");
   revalidatePath("/insights");
-  return { ok: true, imported };
+  return { ok: true, imported, skipped, skipReasons };
 }
 
 export async function importExpenses(
@@ -148,9 +169,13 @@ export async function importExpenses(
   if (rows.length === 0) return { error: "CSV is empty or has no valid rows." };
 
   let imported = 0;
+  const skipReasons: string[] = [];
+  let skipped = 0;
   try {
     await prisma.$transaction(async (tx) => {
-      for (const r of rows) {
+      for (let i = 0; i < rows.length; i++) {
+        const r = rows[i]!;
+        const rowNumber = i + 2; // account for the header row
         const parsed = expenseRowSchema.safeParse({
           date: r.date ?? r.Date,
           category: r.category ?? r.Category,
@@ -159,7 +184,13 @@ export async function importExpenses(
           paymentMethod: r.paymentMethod ?? r["Payment Method"] ?? r.Payment,
           notes: r.notes ?? r.Notes,
         });
-        if (!parsed.success) continue;
+        if (!parsed.success) {
+          skipped++;
+          if (skipReasons.length < MAX_SKIP_REASONS) {
+            skipReasons.push(describeIssues(rowNumber, parsed.error));
+          }
+          continue;
+        }
 
         const v = parsed.data;
         await tx.expense.create({
@@ -184,6 +215,6 @@ export async function importExpenses(
 
   revalidatePath("/expenses");
   revalidatePath("/dashboard");
-  return { ok: true, imported };
+  return { ok: true, imported, skipped, skipReasons };
 }
 

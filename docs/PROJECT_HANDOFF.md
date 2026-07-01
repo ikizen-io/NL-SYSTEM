@@ -8,63 +8,68 @@ The owner is the only intended user for now. Prioritize fast data entry, clear f
 
 ## Current Status
 
+Deployed to production on Vercel, backed by Supabase Postgres, behind a single-owner login gate. This is not a local-only prototype anymore.
+
 ### Core modules (original scope)
 
-- Dashboard with month mode, custom date range, and quick presets (Today, 7/30/90/365 days, This FY).
-- Sales Ledger with invoice creation, multi-item invoices, payments, status updates, search, pagination, and filters.
-- Invoice detail with tabbed Overview / Edit / Payments (status controls live on the Payments tab).
+- Dashboard with month mode, custom date range, always-visible quick presets (Today, 7/30/90/365 days, This FY).
+- Sales Ledger with invoice creation, multi-item invoices, payments, status updates, search, pagination, and filters (date range, status, customer, payment method, brand, category).
+- Invoice detail with tabbed Overview / Edit / Payments / Returns (status controls live on the Payments tab).
 - Inventory SKU catalog with active/archive behavior, search, and restore for archived SKUs.
-- SKU add/edit/remove flows with brand/category dropdowns on create and edit.
+- SKU add/edit/remove flows with a creatable combobox for brand/category (type to filter, or create a new value inline — no separate "custom" field).
 - Color/variant support for SKUs.
-- Receive Stock with supplier, purchase reference, unit cost, extra landed cost, and notes.
+- Receive Stock with supplier, purchase reference, unit cost, extra landed cost, and notes; supports both existing SKUs and inline new-product lines.
 - Supplier management as first-class records, with archive/restore behavior.
 - Stock adjustment page for manual count corrections.
 - Expenses entry and listing.
 - Insights by brand and top customers.
-- CSV import for inventory and expenses.
+- CSV import for inventory and expenses, with friendly inline errors and per-row skip reasons (invalid rows are reported, not silently dropped).
 
-### Added in recent UI / feature phases
+### Reliability & UX
 
-**Reliability & UX**
-
-- `useActionState` + inline errors + success toasts on most owner-facing forms.
+- `useActionState` + inline errors (`ActionStateBanner`) + success toasts on all owner-facing forms, including CSV import.
 - Confirmation dialogs for destructive actions (delete payment, archive/remove SKU or supplier).
 - Sticky table headers on large tables.
 - Customer combobox with autofill in New Sale and Invoice Edit.
-- New Sale oversell warning, form reset, and toast-only success.
-- Print invoice view with polished badge styling.
+- New Sale oversell warning, pre-order mode (bypasses the stock gate for advance sales), form reset, and toast-only success.
+- Print invoice view with polished styling, print-safe colors, and page-break handling so standard invoices stay on one page (long invoices push Payment Information/Contact/footer to page 2 as a block).
 
-**Customers (CRM)**
+### Customers (CRM)
 
 - `/customers` list with search.
 - `/customers/[customer]` profile with edit form (phone, Instagram, address, notes).
 - Lifetime spend, outstanding balance, and invoice history on the profile.
 - Links from Sales Ledger and customer fields to open profiles.
 
-**Sales & dashboard**
+### Payments
 
-- Sales Ledger filters: date range, status (including paid/pending), customer, payment method.
-- Shared invoice financial helpers in `src/lib/invoices.ts`.
+- Payment methods: Bank, Cash, COD, Transfer, KOKO Pay, Other (`src/lib/payment-methods.ts`).
+- Invoices carry an optional `preferredPaymentMethod`, editable on the invoice detail page and set at sale creation.
 
-**Inventory & reports**
+### Inventory & reports
 
 - Global stock-in history at `/inventory/stock-ins` with search.
-- Per-SKU stock-in history panel on the edit page.
-- Shared inventory helpers in `src/lib/inventory.ts` (current stock, valuation rows).
-- Reports hub at `/reports`: outstanding balances, low stock, inventory valuation.
+- Per-SKU stock-in history panel on the edit page, with supplier/details editable per batch.
+- Shared inventory helpers in `src/lib/inventory.ts` (current stock, valuation rows) — covered by unit tests.
+- Reports hub at `/reports`: outstanding balances, low stock (flat threshold, see Next Steps), inventory valuation, cash received vs. revenue, product profitability by brand/model, expenses by category.
 
-**Returns & exchanges**
+### Returns & exchanges
 
 - Invoice detail **Returns** tab: line-level returns, optional restock, exchanges, refund audit.
 - Full invoice return via status control restocks remaining qty and creates return records.
 - Net revenue/COGS/balance adjust automatically across dashboard, sales ledger, reports, and insights.
 
-**Backup & export**
+### Backup & export
 
-- `/backup` page with SQLite download, save-to-`backups/` action, last-backup reminder.
-- CSV exports: variants, stock-ins, invoices, invoice-items, payments, expenses, customers.
+- `/backup` page with CSV exports (works in every environment) and SQLite-only DB download (local dev convenience, disabled against Postgres).
 - API routes: `/api/backup/database`, `/api/export/[dataset]`.
-- Desktop script still available: `tools/backup-database.bat`.
+- Desktop script still available for local SQLite backups: `tools/backup-database.bat`.
+
+### Auth & infrastructure
+
+- Single-owner login gate: `src/middleware.ts` + `src/lib/auth.ts`, signed session cookie, `AUTH_USERNAME`/`AUTH_PASSWORD`/`AUTH_SECRET` env vars.
+- Production database is Supabase Postgres with tracked Prisma migrations (`prisma/migrations/`) — not `db push`.
+- Unit tests (`vitest`) cover invoice financials, returns math, stock derivation, unit costing, and the Sales Ledger filter/query builder.
 
 ## Important User Preferences
 
@@ -73,13 +78,15 @@ The owner is the only intended user for now. Prioritize fast data entry, clear f
 - Use professional placeholders, but keep Nitro Labs/sportswear examples where useful.
 - Workflows should be clear to a non-technical owner.
 - Avoid mixing concepts on one form: SKU setup, receiving stock, supplier management, and stock adjustments should remain separate flows.
+- Financial/inventory history is append-only — prefer archiving/adjusting records over deleting them.
 
 ## Run Commands
 
 ```bash
 npx next dev --port 3005
 npm run build
-npx prisma db push
+npm run test
+npx prisma migrate deploy
 ```
 
 Production-style local run (serves the last build):
@@ -104,7 +111,7 @@ Typical recovery:
 
 1. Stop the Next dev server.
 2. If needed, find/kill the process using port 3005.
-3. Run `npx prisma db push` or `npx prisma generate`.
+3. Run `npx prisma migrate dev` or `npx prisma generate`.
 4. Restart `npx next dev --port 3005`.
 
 ## Recent Bug Fix Context
@@ -117,7 +124,7 @@ Do not remove this normalization unless replacing it with an equivalent form-sta
 
 See `docs/NEXT_STEPS.md` for the full backlog. Highest-impact remaining items:
 
-- True combobox for brand/category/supplier with `Create "value"` (basic combobox exists for customers and SKU pickers).
-- Additional reports (cash vs revenue, profitability, expenses by category).
-- Friendly errors for CSV import and invoice status save.
-- Auth, automated tests, and formal Prisma migrations before any non-local deployment.
+- Per-SKU/variant reorder point for a smarter low-stock report (currently a flat "≤ 1 unit" threshold for every SKU).
+- Global/Cmd+K search across customers, invoices, and SKUs.
+- Product photos per SKU/variant.
+- Dashboard period-over-period comparison.

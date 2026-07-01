@@ -2,92 +2,42 @@
 
 This file tracks what is still open. For what already ships, see `docs/PROJECT_HANDOFF.md`.
 
-## Phase F — Reliability & Friendly Errors
+This is being worked through as the "Phased ERP Polish Upgrade" plan, in order:
 
-Most owner-facing forms use `useActionState`, inline `ActionStateBanner` errors, and success toasts.
+1. Correctness & test coverage (this phase)
+2. Recurring UX friction (global search, supplier picker consistency)
+3. Product photos per SKU
+4. Dashboard period-over-period comparison
 
-**Already covered:** new sale, add payment, delete/update payment, expenses, suppliers (add/update/remove), stock adjust, create/edit SKU, receive stock, customer edit, confirm-dialog destructive actions, invoice status panel, process return.
+## Phase 1 — Correctness & Test Coverage
 
-**Still to convert:**
+- [x] Unit tests for `currentStock()` / `computeInventoryRow()` (`src/__tests__/inventory.test.ts`).
+- [x] Unit tests for `effectiveUnitCost()` (`src/__tests__/costing.test.ts`).
+- [x] Unit tests for the Sales Ledger filter/query builder (`src/__tests__/sales-filters.test.ts`).
+- [x] CSV import now reports skipped-row counts and reasons instead of silently dropping invalid rows (`ImportActionState.skipped` / `skipReasons`).
+- [x] Refreshed README/PROJECT_HANDOFF/ARCHITECTURE/NEXT_STEPS to match the actual Postgres + auth + migrations + tests state.
 
-- CSV import (`import/actions.ts`) — parse/validation failures can show a dev error overlay; forms need client `useActionState` wrappers.
+## Phase 2 — Recurring UX Friction
 
-Recommended pattern:
+- [ ] Global search (Cmd+K / Ctrl+K) across customers, invoices, and SKUs, built on the existing `cmdk`-based `Command` primitives.
+- [ ] Migrate the Supplier picker in `ReceivePurchaseForm.tsx` from `Combobox` + `__NEW__` sentinel to the shared `CreatableCombobox` (already used for Brand/Category everywhere) for one consistent pattern.
 
-```ts
-export type ActionState = { ok?: boolean; error?: string; imported?: number };
-```
+## Phase 3 — Product Photos
 
-Return `{ error }` from server actions; show inline errors in the form; use toasts only for success.
+- [ ] Add an optional `imageUrl` field (Variant or Product — decide during implementation) via a tracked Prisma migration.
+- [ ] Storage: Supabase Storage (recommended, reuses the existing Supabase project) vs. Vercel Blob — confirm before implementation.
+- [ ] Upload UI on Create/Edit SKU forms.
+- [ ] Thumbnails in the inventory table, SKU picker comboboxes, and optionally the printable invoice.
 
-## Phase G — Canonical Comboboxes
+## Phase 4 — Dashboard Period Comparison
 
-Customer selection and SKU pickers already use the shared `Combobox` component. Brand, category, and supplier inputs still use `Select` + `__NEW__` inline sentinel.
+- [ ] "vs previous period" delta badges on dashboard stat cards (same-length range immediately preceding the selected one).
 
-Build a `CreatableCombobox` that:
+## Backlog / Not Yet Scheduled
 
-- type-to-filter existing options
-- keyboard navigation
-- shows `Create "value"` row when search text is new
-- passes the typed value directly (no `__NEW__` sentinel)
-
-Apply to:
-
-- Brand and Category in `CreateSkuForm` and `EditSkuForm`
-- Brand and Category in new-product lines of `ReceivePurchaseForm`
-
-Supplier in receive purchase already uses `Combobox` + inline text field; that can stay as-is or be upgraded.
-
-## Phase H — Reports Expansion
-
-Implemented at `/reports`:
-
-- outstanding balances (issued invoices with balance > 0)
-- low stock (active SKUs at ≤ 1 unit)
-- inventory valuation
-
-To add:
-
-- cash received vs revenue
-- product profitability (brand/model: revenue, COGS, GP, qty sold)
-- expenses by category
-
-## Phase I — Sales Filter + Dashboard Enhancements
-
-Sales Ledger filters implemented: date range, status, customer, payment method, search, pagination.
-
-To add:
-
-- brand / category filters on the Sales Ledger (filter by items that belong to that brand/category)
-
-Dashboard presets ship. Future improvement:
-
-- comparison to prior period (same length range offset back)
-
-## Phase J — Quality & Release Hardening
-
-- Automated tests for core business math:
-  - `invoiceFinancials` (partial/full returns, cancelled)
-  - `currentStock` with adjustments and returns
-  - payment balance constraints
-- Formal Prisma migration baseline (replace `db push` with tracked migration files).
-- Simple single-owner auth: middleware + login page using `AUTH_USERNAME`/`AUTH_PASSWORD`/`AUTH_SECRET` env vars.
-
-## Phase K — Deployment (Vercel + Supabase)
-
-- Migrate production DB from SQLite to Supabase Postgres.
-- Prisma datasource switch + schema migration to Postgres.
-- Data migration plan: export SQLite → seed Supabase.
-- Vercel project setup, env vars, build/deploy checklist.
-- Production-safe backup strategy (CSV exports replace `.db` download on hosted env).
-- Full runbook in `docs/DEPLOYMENT.md`.
-
-## Technical Debt (ongoing)
-
-- No automated tests yet (Phase J).
-- Prisma changes done via `db push`; switch to migrations before Phase K.
-- Sales CSV import not implemented (inventory + expenses import only).
-- Local auth not implemented yet (Phase J).
+- **Low-stock threshold**: currently a flat "≤ 1 unit" cutoff in `/reports` (`src/app/(app)/reports/page.tsx`) for every SKU. A per-variant reorder point would make the report meaningful for fast- vs. slow-moving sizes/colorways. Explicitly deferred — revisit when prioritizing inventory depth again.
+- Rate limiting / login attempt throttling on `/api/auth/login`.
+- Scheduled/automated backup job (beyond manually visiting `/backup` or relying on Supabase PITR).
 
 ## Audit Trail Principles
 
@@ -98,17 +48,21 @@ Financial/inventory records are append-only:
 - Returns use `ReturnRecord` / `ReturnItem`.
 - SKU/supplier archive instead of delete when they have history.
 
-## Completed
+## Already Shipped (do not re-plan these)
 
 | Area | Route / location |
 |------|------------------|
+| Postgres + tracked migrations | `prisma/schema.prisma`, `prisma/migrations/` |
+| Single-owner auth | `src/middleware.ts`, `src/lib/auth.ts` |
 | Customer CRM | `/customers`, `/customers/[customer]` |
-| Sales filters | `SalesLedgerFilters.tsx`, `src/lib/sales-filters.ts` |
-| Dashboard presets | `DashboardPresets.tsx` |
+| Sales filters (incl. brand/category) | `SalesLedgerFilters.tsx`, `src/lib/sales-filters.ts` |
+| Dashboard presets | `DashboardFilters.tsx` |
+| Creatable combobox for Brand/Category | `src/components/ui/creatable-combobox.tsx`, used in `CreateSkuForm`, `EditSkuForm`, `ReceivePurchaseForm` |
 | Stock-in history | `/inventory/stock-ins`, per-SKU panel on edit page |
-| Reports hub | `/reports` |
+| Reports hub (outstanding, low stock, valuation, cash vs. revenue, profitability, expenses by category) | `/reports` |
 | Backup & export | `/backup`, `/api/backup/database`, `/api/export/[dataset]` |
 | Partial returns / exchanges | `/sales/[invoice]` Returns tab, `ReturnRecord` models |
-| Archive restore | `restoreSku`, `restoreSupplier`, `RestoreButton` |
+| Archive/restore | `restoreSku`, `restoreSupplier`, `RestoreButton` |
 | Confirm dialogs | `ConfirmActionForm` for destructive actions |
-| Invoice status friendly errors | `InvoiceStatusPanel` uses `useActionState` |
+| Friendly errors everywhere, incl. CSV import | `useActionState` + `ActionStateBanner` on all owner-facing forms |
+| Unit tests for core business math | `src/__tests__/` |
