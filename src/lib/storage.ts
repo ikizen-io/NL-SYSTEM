@@ -51,7 +51,9 @@ export async function uploadSkuPhoto(file: File, sku: string): Promise<string> {
     throw new Error("Please upload a JPEG, PNG, WEBP, or GIF image.");
   }
   if (file.size > MAX_PHOTO_BYTES) {
-    throw new Error("Image must be 5 MB or smaller.");
+    throw new Error(
+      `Image must be ${Math.floor(MAX_PHOTO_BYTES / (1024 * 1024))} MB or smaller.`,
+    );
   }
 
   const safeSku = sku.replace(/[^a-zA-Z0-9_-]/g, "_");

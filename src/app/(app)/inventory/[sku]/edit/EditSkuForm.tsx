@@ -12,6 +12,8 @@ import { toast } from "sonner";
 import { updateSku } from "../../actions";
 import { ACCEPTED_PHOTO_TYPES, MAX_PHOTO_BYTES } from "@/lib/storage-shared";
 
+const MAX_PHOTO_MB = Math.floor(MAX_PHOTO_BYTES / (1024 * 1024));
+
 export function EditSkuForm({
   variant,
   brands,
@@ -68,7 +70,7 @@ export function EditSkuForm({
   function handlePhotoChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (file && file.size > MAX_PHOTO_BYTES) {
-      toast.error("Image must be 5 MB or smaller.");
+      toast.error(`Image must be ${MAX_PHOTO_MB} MB or smaller.`);
       event.target.value = "";
       return;
     }
@@ -179,7 +181,7 @@ export function EditSkuForm({
           />
         </div>
         <div className="mt-1 text-[11px] text-zinc-500">
-          Optional. JPEG, PNG, WEBP, or GIF, up to 5 MB.
+          Optional. JPEG, PNG, WEBP, or GIF, up to {MAX_PHOTO_MB} MB.
         </div>
       </div>
 
