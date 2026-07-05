@@ -4,8 +4,9 @@
  * two HTTP calls (upload + delete) against a single public bucket.
  */
 
+import { MAX_PHOTO_BYTES } from "./storage-shared";
+
 const BUCKET = "sku-photos";
-const MAX_FILE_BYTES = 5 * 1024 * 1024; // 5 MB
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
 
 export function isImageUploadConfigured() {
@@ -49,7 +50,7 @@ export async function uploadSkuPhoto(file: File, sku: string): Promise<string> {
   if (!ALLOWED_TYPES.has(file.type)) {
     throw new Error("Please upload a JPEG, PNG, WEBP, or GIF image.");
   }
-  if (file.size > MAX_FILE_BYTES) {
+  if (file.size > MAX_PHOTO_BYTES) {
     throw new Error("Image must be 5 MB or smaller.");
   }
 

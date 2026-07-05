@@ -10,6 +10,7 @@ import { Input, Label } from "@/components/ui/input";
 import { formatLkr } from "@/lib/format";
 import { toast } from "sonner";
 import { updateSku } from "../../actions";
+import { ACCEPTED_PHOTO_TYPES, MAX_PHOTO_BYTES } from "@/lib/storage-shared";
 
 export function EditSkuForm({
   variant,
@@ -66,6 +67,11 @@ export function EditSkuForm({
 
   function handlePhotoChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
+    if (file && file.size > MAX_PHOTO_BYTES) {
+      toast.error("Image must be 5 MB or smaller.");
+      event.target.value = "";
+      return;
+    }
     if (photoPreview) URL.revokeObjectURL(photoPreview);
     setPhotoPreview(file ? URL.createObjectURL(file) : null);
     if (file) setRemoveExistingPhoto(false);
@@ -167,7 +173,7 @@ export function EditSkuForm({
             ref={fileInputRef}
             name="photo"
             type="file"
-            accept="image/png,image/jpeg,image/webp,image/gif"
+            accept={ACCEPTED_PHOTO_TYPES}
             onChange={handlePhotoChange}
             className="max-w-xs"
           />
