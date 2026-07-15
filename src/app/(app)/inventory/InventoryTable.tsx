@@ -14,31 +14,6 @@ import { removeSku, restoreSku } from "./actions";
 import { RestoreButton } from "@/components/ui/restore-button";
 import { cn } from "@/lib/cn";
 
-function CellText({
-  text,
-  className,
-  lines = 2,
-}: {
-  text: string;
-  className?: string;
-  lines?: 1 | 2 | 3;
-}) {
-  return (
-    <span
-      title={text}
-      className={cn(
-        "block whitespace-normal break-words leading-snug",
-        lines === 1 && "line-clamp-1",
-        lines === 2 && "line-clamp-2",
-        lines === 3 && "line-clamp-3",
-        className,
-      )}
-    >
-      {text}
-    </span>
-  );
-}
-
 type StockFilter = "all" | "in-stock" | "low-stock" | "out-of-stock";
 type SortKey =
   | "default"
@@ -235,19 +210,7 @@ export function InventoryTable({
 
       {/* Table */}
       <div className="overflow-auto">
-        <Table className="table-fixed min-w-[980px]">
-          <colgroup>
-            <col className="w-[108px]" />
-            {/* Was 260px truncate before; slightly wider so long names can wrap. */}
-            <col className="w-[280px]" />
-            <col className="w-[180px]" />
-            <col className="w-[88px]" />
-            <col className="w-[88px]" />
-            <col className="w-[72px]" />
-            <col className="w-[52px]" />
-            <col className="w-[84px]" />
-            <col className="w-[88px]" />
-          </colgroup>
+        <Table>
           <THead>
             <tr>
               <TH>SKU</TH>
@@ -304,41 +267,34 @@ export function InventoryTable({
                     <TD className="whitespace-nowrap font-mono text-[12px] text-zinc-700">
                       {row.sku}
                     </TD>
-                    <TD className="align-top py-3">
-                      <div className="flex items-start gap-2">
+                    <TD className="max-w-[300px]">
+                      <div className="flex items-center gap-2">
                         {row.imageUrl ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
                             src={row.imageUrl}
                             alt=""
-                            className="mt-0.5 h-8 w-8 shrink-0 rounded-md border border-zinc-200 object-cover"
+                            className="h-8 w-8 shrink-0 rounded-md border border-zinc-200 object-cover"
                           />
                         ) : null}
                         <div className="min-w-0">
-                          <Link
-                            prefetch={false}
-                            href={`/inventory/${encodeURIComponent(row.sku)}/edit`}
-                            className="font-medium text-zinc-950 hover:text-zinc-700 hover:underline"
+                          <div
+                            title={row.modelName}
+                            className="line-clamp-2 font-medium leading-snug text-zinc-950"
                           >
-                            <CellText text={row.modelName} lines={3} />
-                          </Link>
-                          <CellText
-                            text={`${row.brand} • ${row.category}`}
-                            className="mt-0.5 text-[11px] text-zinc-500"
-                            lines={1}
-                          />
+                            {row.modelName}
+                          </div>
+                          <div className="truncate text-[11px] text-zinc-500">
+                            {row.brand} • {row.category}
+                          </div>
                         </div>
                       </div>
                     </TD>
-                    <TD className="align-top py-3 text-zinc-700">
-                      <CellText
-                        text={
-                          row.color
-                            ? `${row.sizeLabel} • ${row.color}`
-                            : row.sizeLabel
-                        }
-                        lines={2}
-                      />
+                    <TD className="whitespace-nowrap text-zinc-700">
+                      {row.sizeLabel}
+                      {row.color ? (
+                        <span className="text-zinc-400"> • {row.color}</span>
+                      ) : null}
                     </TD>
                     <TD align="right" className="whitespace-nowrap">
                       {formatLkr(row.unitCost)}
