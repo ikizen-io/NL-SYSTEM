@@ -145,7 +145,9 @@ describe("invoiceFinancials", () => {
     expect(result.paid).toBe(12500);
     expect(result.refunded).toBe(12500);
     expect(result.balance).toBe(0);
-    expect(result.derivedStatus).toBe("COMPLETED");
+    expect(result.derivedStatus).toBe("RETURNED");
+    expect(result.statusLabel).toBe("Returned");
+    expect(result.tone).toBe("danger");
   });
 
   it("keeps invoice pending when collected payments exceed revenue after return without enough refund", () => {
@@ -164,6 +166,31 @@ describe("invoiceFinancials", () => {
     expect(result.revenue).toBe(0);
     expect(result.balance).toBe(-12500);
     expect(result.derivedStatus).toBe("PENDING");
+    expect(result.statusLabel).toBe("Returned (refund due)");
+    expect(result.tone).toBe("warning");
+  });
+
+  it("keeps Paid (partial return) only when some lines remain sold", () => {
+    const items = [
+      makeItem("a", 1, 10000, 6000),
+      makeItem("b", 1, 5000, 3000),
+    ];
+    const returns = [makeReturnRecord(0, [{ invoiceItemId: "b", qty: 1 }])];
+
+    const result = invoiceFinancials({
+      status: "ISSUED",
+      shippingCharge: 0,
+      discountAmount: 0,
+      items,
+      payments: [makePayment(10000)],
+      returnRecords: returns,
+    });
+
+    expect(result.revenue).toBe(10000);
+    expect(result.balance).toBe(0);
+    expect(result.derivedStatus).toBe("COMPLETED");
+    expect(result.statusLabel).toBe("Paid (partial return)");
+    expect(result.tone).toBe("success");
   });
 
   it("handles multiple items and multiple return records", () => {

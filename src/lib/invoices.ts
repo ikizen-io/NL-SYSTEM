@@ -101,19 +101,32 @@ export function invoiceFinancials(inv: InvoiceFinancialInput): InvoiceFinancials
   const margin = revenue !== 0 ? gp / revenue : 0;
   const paid = (inv.payments ?? []).reduce((sum, payment) => sum + payment.amount, 0);
   const balance = revenue - paid + refunded;
-  const derivedStatus = balance === 0 ? "COMPLETED" : "PENDING";
 
-  const statusLabel =
-    derivedStatus === "COMPLETED"
-      ? partialReturns
-        ? "Paid (partial return)"
-        : "Paid"
-      : partialReturns
-        ? "Pending (partial return)"
-        : "Pending";
+  // Full return/cancel of every line is not a successful sale — don't show
+  // "Paid (partial return)" in green just because the cash is settled.
+  let derivedStatus: string;
+  let statusLabel: string;
+  let tone: InvoiceFinancials["tone"];
 
-  const tone: InvoiceFinancials["tone"] =
-    derivedStatus === "COMPLETED" ? "success" : "warning";
+  if (fullyReturned) {
+    if (balance < 0) {
+      derivedStatus = "PENDING";
+      statusLabel = "Returned (refund due)";
+      tone = "warning";
+    } else {
+      derivedStatus = "RETURNED";
+      statusLabel = "Returned";
+      tone = "danger";
+    }
+  } else if (balance === 0) {
+    derivedStatus = "COMPLETED";
+    statusLabel = partialReturns ? "Paid (partial return)" : "Paid";
+    tone = "success";
+  } else {
+    derivedStatus = "PENDING";
+    statusLabel = partialReturns ? "Pending (partial return)" : "Pending";
+    tone = "warning";
+  }
 
   return {
     sign: 1,
