@@ -238,8 +238,9 @@ export function InventoryTable({
         <Table className="table-fixed min-w-[980px]">
           <colgroup>
             <col className="w-[108px]" />
-            <col className="w-[32%]" />
-            <col className="w-[20%]" />
+            {/* Was 260px truncate before; slightly wider so long names can wrap. */}
+            <col className="w-[280px]" />
+            <col className="w-[180px]" />
             <col className="w-[88px]" />
             <col className="w-[88px]" />
             <col className="w-[72px]" />
