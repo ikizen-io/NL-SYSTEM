@@ -27,7 +27,8 @@ All four phases are shipped as of this writing. What's left is the explicitly-de
 ## Phase 3 — Product Photos
 
 - [x] Added an optional `Variant.imageUrl` field via Prisma schema + migration.
-- [x] Storage: Supabase Storage, using the existing project's own `sku-photos` bucket (public read, anon-scoped insert/update/delete via RLS policies limited to that one bucket — see `src/lib/storage.ts`). Implemented against the plain Storage REST API via `fetch`, so no new npm dependency was needed.
+- [x] Storage: Supabase Storage, using the existing project's own `sku-photos` bucket (public read, anon-scoped insert/select/update/delete via RLS policies limited to that one bucket — see `src/lib/storage.ts`). Implemented against the plain Storage REST API via `fetch`, so no new npm dependency was needed.
+  - **Gotcha**: all four policies (insert/select/update/delete) are required, even though the bucket is public. The Storage API's upload endpoint does an `INSERT ... RETURNING`, and Postgres RLS checks the returned row against `SELECT` policies too — without one, every upload fails with a misleading `new row violates row-level security policy` error, even though the `INSERT` policy itself is fine. Supabase's own security linter flags this `SELECT` policy as "Public Bucket Allows Listing" (since it lets the anon key list filenames in the bucket, not just fetch by known URL) — that's a known, accepted tradeoff here, not a mistake to "fix" by removing it again.
 - [x] Upload UI (with preview, replace, and remove) on Create/Edit SKU forms.
 - [x] Thumbnails in the inventory table and the SKU picker comboboxes (New Sale, Receive Purchase). Printable invoice line-item thumbnails were left out (explicitly optional in the plan, and would add visual noise to a document meant to stay compact).
 - Note: `SUPABASE_URL` / `SUPABASE_STORAGE_KEY` must be set (see `.env.example`) or the upload UI silently no-ops (SKU save still succeeds without a photo).

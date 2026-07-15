@@ -809,15 +809,17 @@ export async function processReturn(
         }),
       ]);
 
-      const projectedRevenue = invoiceFinancials({
+      const projected = invoiceFinancials({
         status: invoice.status,
         shippingCharge: invoice.shippingCharge,
         discountAmount: invoice.discountAmount,
         items: allItems,
+        payments: invoice.payments,
         returnRecords: toReturnRecordInput(allReturnRecords),
-      }).revenue;
+      });
 
-      if (paid > projectedRevenue) {
+      const netCollected = projected.paid - projected.refunded;
+      if (netCollected > projected.revenue) {
         throw new Error(
           "Payments already collected exceed the invoice total after this return/exchange. Record a refund or adjust payments first.",
         );

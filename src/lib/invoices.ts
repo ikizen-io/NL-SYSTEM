@@ -100,8 +100,8 @@ export function invoiceFinancials(inv: InvoiceFinancialInput): InvoiceFinancials
   const gp = revenue - cogs;
   const margin = revenue !== 0 ? gp / revenue : 0;
   const paid = (inv.payments ?? []).reduce((sum, payment) => sum + payment.amount, 0);
-  const balance = revenue - paid;
-  const derivedStatus = balance <= 0 ? "COMPLETED" : "PENDING";
+  const balance = revenue - paid + refunded;
+  const derivedStatus = balance === 0 ? "COMPLETED" : "PENDING";
 
   const statusLabel =
     derivedStatus === "COMPLETED"

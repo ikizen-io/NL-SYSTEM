@@ -360,7 +360,7 @@ export function ReturnExchangeForm({
         {refundValue > 0 ? (
           <p className="mt-1 text-xs text-zinc-500">
             Refund of {formatLkr(refundValue)} will be recorded on this return
-            for audit. Adjust payments separately if you paid cash back.
+            for audit and will settle the invoice balance.
           </p>
         ) : null}
       </FormSection>

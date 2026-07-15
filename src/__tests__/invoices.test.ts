@@ -128,6 +128,44 @@ describe("invoiceFinancials", () => {
     expect(result.cogs).toBe(0);
   });
 
+  it("settles balance to zero when a full return includes a matching refund", () => {
+    const item = makeItem("i1", 1, 27000, 18000);
+    const returnRecord = makeReturnRecord(12500, [{ invoiceItemId: "i1", qty: 1 }]);
+
+    const result = invoiceFinancials({
+      status: "ISSUED",
+      shippingCharge: 0,
+      discountAmount: 2000,
+      items: [item],
+      payments: [makePayment(12500)],
+      returnRecords: [returnRecord],
+    });
+
+    expect(result.revenue).toBe(0);
+    expect(result.paid).toBe(12500);
+    expect(result.refunded).toBe(12500);
+    expect(result.balance).toBe(0);
+    expect(result.derivedStatus).toBe("COMPLETED");
+  });
+
+  it("keeps invoice pending when collected payments exceed revenue after return without enough refund", () => {
+    const item = makeItem("i1", 1, 27000, 18000);
+    const returnRecord = makeReturnRecord(0, [{ invoiceItemId: "i1", qty: 1 }]);
+
+    const result = invoiceFinancials({
+      status: "ISSUED",
+      shippingCharge: 0,
+      discountAmount: 2000,
+      items: [item],
+      payments: [makePayment(12500)],
+      returnRecords: [returnRecord],
+    });
+
+    expect(result.revenue).toBe(0);
+    expect(result.balance).toBe(-12500);
+    expect(result.derivedStatus).toBe("PENDING");
+  });
+
   it("handles multiple items and multiple return records", () => {
     const items = [
       makeItem("a", 2, 10000, 6000),
