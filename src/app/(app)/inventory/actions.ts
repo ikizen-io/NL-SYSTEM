@@ -69,6 +69,7 @@ const createSkuSchema = z.object({
   sizeLabel: z.string().min(1).max(50),
   color: optionalText(50),
   targetPrice: optionalMoney(z.coerce.number().int().positive()),
+  reorderPoint: optionalMoney(z.coerce.number().int().nonnegative()),
 });
 
 export async function createSku(
@@ -83,6 +84,7 @@ export async function createSku(
     sizeLabel: formData.get("sizeLabel"),
     color: formData.get("color"),
     targetPrice: formData.get("targetPrice"),
+    reorderPoint: formData.get("reorderPoint"),
   });
 
   if (!parsed.success) {
@@ -138,6 +140,9 @@ export async function createSku(
           targetPrice: Number.isFinite(v.targetPrice as number)
             ? Number(v.targetPrice)
             : null,
+          reorderPoint: Number.isFinite(v.reorderPoint as number)
+            ? Number(v.reorderPoint)
+            : 1,
         },
       });
 
@@ -735,6 +740,7 @@ const updateSkuSchema = z.object({
   sizeLabel: z.string().min(1).max(50),
   color: optionalText(50),
   targetPrice: z.coerce.number().int().positive().optional().or(z.nan()),
+  reorderPoint: z.coerce.number().int().nonnegative().optional().or(z.nan()),
   latestStockInId: optionalText(80),
   latestUnitCost: z.coerce.number().int().positive().optional().or(z.nan()),
   latestExtraCost: z.coerce.number().int().nonnegative().optional().or(z.nan()),
@@ -753,6 +759,7 @@ export async function updateSku(
     sizeLabel: formData.get("sizeLabel"),
     color: formData.get("color"),
     targetPrice: formData.get("targetPrice"),
+    reorderPoint: formData.get("reorderPoint"),
     latestStockInId: formData.get("latestStockInId"),
     latestUnitCost: formData.get("latestUnitCost"),
     latestExtraCost: formData.get("latestExtraCost"),
@@ -813,6 +820,9 @@ export async function updateSku(
           targetPrice: Number.isFinite(v.targetPrice as number)
             ? Number(v.targetPrice)
             : null,
+          reorderPoint: Number.isFinite(v.reorderPoint as number)
+            ? Number(v.reorderPoint)
+            : 1,
           ...(nextImageUrl !== undefined ? { imageUrl: nextImageUrl } : {}),
         },
       });

@@ -28,7 +28,9 @@ export default async function InventoryPage({
   const rows = computeInventoryRows(variants);
 
   const totalStock = rows.reduce((sum, r) => sum + Math.max(0, r.currentStock), 0);
-  const reorderCount = rows.filter((r) => r.active && r.currentStock <= 1).length;
+  const reorderCount = rows.filter(
+    (r) => r.active && r.currentStock <= r.reorderPoint,
+  ).length;
   const totalValuation = rows.reduce((sum, r) => sum + r.stockValue, 0);
 
   return (

@@ -186,9 +186,12 @@ export async function addPayment(
   }
 
   const returnRecords = toReturnRecordInput(invoice.returnRecords);
-  const total = invoiceNetTotal({ ...invoice, returnRecords });
-  const paid = invoice.payments.reduce((sum, payment) => sum + payment.amount, 0);
-  const balance = total - paid;
+  const financials = invoiceFinancialsFromRecord({
+    ...invoice,
+    returnRecords,
+  });
+  // Collectable balance only — refund-due (negative) means no more payments.
+  const balance = Math.max(0, financials.balance);
 
   if (v.amount > balance) {
     return { error: `Payment exceeds remaining balance (${balance} LKR).` };
@@ -243,38 +246,48 @@ export async function setInvoiceStatus(
       }
 
       if (parsed.data.status === "RETURNED" && invoice.status === "ISSUED") {
+        // Stock model: ISSUED lines deduct; CANCELLED/RETURNED stop deducting.
+        // Do NOT also create restock adjustments here — that would double-count
+        // inventory. Goods returns with restock belong on the Returns tab while
+        // the invoice stays ISSUED.
         const returnRecords = toReturnRecordInput(invoice.returnRecords);
         const lines = invoice.items.flatMap((item) => {
           const qty = availableReturnQty(item.id, item.qty, returnRecords);
           if (qty <= 0) return [];
-          return [{ invoiceItemId: item.id, qty, restock: true }];
+          return [{ invoiceItemId: item.id, qty, restock: false }];
         });
 
         if (lines.length > 0) {
-          const returnRecord = await tx.returnRecord.create({
+          await tx.returnRecord.create({
             data: {
               invoiceId: invoice.id,
               date: new Date(),
               notes: "Full invoice marked as returned",
               items: { create: lines },
             },
-            include: { items: true },
           });
+        }
+      }
 
-          for (const returnItem of returnRecord.items) {
-            const invoiceItem = invoice.items.find(
-              (item) => item.id === returnItem.invoiceItemId,
-            );
-            if (!invoiceItem || !returnItem.restock) continue;
-            await tx.stockAdjustment.create({
-              data: {
-                variantId: invoiceItem.variantId,
-                qtyDelta: returnItem.qty,
-                reason: "Customer return",
-                notes: `Full return on ${invoice.invoiceNo}`,
-              },
-            });
-          }
+      if (parsed.data.status === "CANCELLED") {
+        if (invoice.returnRecords.length > 0) {
+          throw new Error(
+            "This invoice has returns. Voiding would leave restocked inventory incorrect. Keep it as-is, or reverse returns first.",
+          );
+        }
+        const paid = await tx.payment.aggregate({
+          where: { invoiceId: invoice.id },
+          _sum: { amount: true },
+        });
+        const refunded = invoice.returnRecords.reduce(
+          (sum, record) => sum + record.refundAmount,
+          0,
+        );
+        const paidTotal = paid._sum.amount ?? 0;
+        if (paidTotal > refunded) {
+          throw new Error(
+            `This invoice has ${paidTotal - refunded} LKR still collected. Record a refund on the Returns tab before voiding, or use Returns to cancel the sale.`,
+          );
         }
       }
 
@@ -296,22 +309,60 @@ export async function setInvoiceStatus(
   return { ok: true };
 }
 
-export async function voidInvoice(formData: FormData) {
+export async function voidInvoice(
+  _prevState: ReturnActionState,
+  formData: FormData,
+): Promise<ReturnActionState> {
   const parsed = statusSchema.pick({ invoiceNo: true }).safeParse({
     invoiceNo: formData.get("invoiceNo"),
   });
-  if (!parsed.success) throw new Error("Invalid invoice");
+  if (!parsed.success) return { error: "Invalid invoice." };
 
   const { invoiceParam, where } = invoiceLookup(parsed.data.invoiceNo);
-  const invoice = await prisma.invoice.findFirst({ where, select: { id: true } });
-  if (!invoice) throw new Error("Invoice not found");
 
-  await prisma.invoice.update({
-    where: { id: invoice.id },
-    data: { status: "CANCELLED" },
-  });
+  try {
+    await prisma.$transaction(async (tx) => {
+      const invoice = await tx.invoice.findFirst({
+        where,
+        include: {
+          payments: true,
+          returnRecords: true,
+        },
+      });
+      if (!invoice) throw new Error("Invoice not found.");
+      if (invoice.status === "CANCELLED") {
+        throw new Error("Invoice is already void.");
+      }
+      if (invoice.returnRecords.length > 0) {
+        throw new Error(
+          "This invoice has returns. Voiding would leave restocked inventory incorrect. Use the Returns tab instead.",
+        );
+      }
+      const paid = invoice.payments.reduce((sum, payment) => sum + payment.amount, 0);
+      const refunded = invoice.returnRecords.reduce(
+        (sum, record) => sum + record.refundAmount,
+        0,
+      );
+      if (paid > refunded) {
+        throw new Error(
+          `This invoice has ${paid - refunded} LKR still collected. Record a refund on the Returns tab before voiding.`,
+        );
+      }
+
+      await tx.invoice.update({
+        where: { id: invoice.id },
+        data: { status: "CANCELLED" },
+      });
+    });
+  } catch (error) {
+    return {
+      error:
+        error instanceof Error ? error.message : "Could not void invoice.",
+    };
+  }
 
   revalidateInvoicePaths(invoiceParam);
+  return { ok: true };
 }
 
 export async function updateInvoice(
@@ -535,13 +586,16 @@ export async function updatePayment(
   }
 
   const returnRecords = toReturnRecordInput(invoice.returnRecords);
-  const total = invoiceNetTotal({ ...invoice, returnRecords });
-  const paidExcludingCurrent = invoice.payments.reduce(
-    (sum, payment) => sum + (payment.id === v.paymentId ? 0 : payment.amount),
-    0,
-  );
-  if (paidExcludingCurrent + v.amount > total) {
-    return { error: "Payment total cannot exceed invoice total." };
+  const financials = invoiceFinancialsFromRecord({
+    ...invoice,
+    payments: invoice.payments.filter((payment) => payment.id !== v.paymentId),
+    returnRecords,
+  });
+  const maxCollectable = Math.max(0, financials.balance);
+  if (v.amount > maxCollectable) {
+    return {
+      error: `Payment total cannot exceed remaining balance (${maxCollectable} LKR).`,
+    };
   }
 
   await prisma.payment.update({
@@ -709,11 +763,24 @@ export async function processReturn(
         const sku = line.sku.trim();
         exchangeQty.set(sku, (exchangeQty.get(sku) ?? 0) + line.qty);
       }
+      const pendingRestockBySku = new Map<string, number>();
+      for (const line of v.returns) {
+        if (!line.restock) continue;
+        const item = itemById.get(line.invoiceItemId);
+        if (!item) continue;
+        const sku = item.variant.sku;
+        pendingRestockBySku.set(
+          sku,
+          (pendingRestockBySku.get(sku) ?? 0) + line.qty,
+        );
+      }
       for (const [sku, requested] of exchangeQty) {
         const variant = bySku.get(sku)!;
-        if (requested > currentStockForVariant(variant)) {
+        const available =
+          currentStockForVariant(variant) + (pendingRestockBySku.get(sku) ?? 0);
+        if (requested > available) {
           throw new Error(
-            `${sku} has only ${currentStockForVariant(variant)} in stock for exchange.`,
+            `${sku} has only ${available} in stock for exchange.`,
           );
         }
       }
@@ -723,8 +790,15 @@ export async function processReturn(
       }
 
       const paid = invoice.payments.reduce((sum, payment) => sum + payment.amount, 0);
-      if (refundAmount > paid) {
-        throw new Error("Refund cannot exceed total payments on this invoice.");
+      const alreadyRefunded = returnRecords.reduce(
+        (sum, record) => sum + record.refundAmount,
+        0,
+      );
+      const refundable = Math.max(0, paid - alreadyRefunded);
+      if (refundAmount > refundable) {
+        throw new Error(
+          `Refund cannot exceed unrefunded payments (${refundable} LKR remaining).`,
+        );
       }
 
       const returnRecord = await tx.returnRecord.create({
@@ -822,6 +896,11 @@ export async function processReturn(
       if (netCollected > projected.revenue) {
         throw new Error(
           "Payments already collected exceed the invoice total after this return/exchange. Record a refund or adjust payments first.",
+        );
+      }
+      if (netCollected < 0) {
+        throw new Error(
+          "Refund would exceed payments collected on this invoice.",
         );
       }
     });

@@ -53,31 +53,22 @@ export function invoiceFinancials(inv: InvoiceFinancialInput): InvoiceFinancials
   }
 
   if (inv.status === "RETURNED") {
-    const sign = -1;
-    const itemsRevenue = inv.items.reduce(
-      (sum, item) => sum + sign * item.qty * item.unitPrice,
-      0,
-    );
-    const revenue =
-      itemsRevenue + sign * inv.shippingCharge - sign * inv.discountAmount;
-    const cogs = inv.items.reduce(
-      (sum, item) => sum + sign * item.qty * item.unitCostAtSale,
-      0,
-    );
-    const gp = revenue - cogs;
+    // Align with a fully-returned ISSUED invoice: revenue/COGS net to zero
+    // (not a negative restatement of the original sale). Refunds settle cash.
     const paid = (inv.payments ?? []).reduce((sum, payment) => sum + payment.amount, 0);
+    const balance = 0 - paid + refunded;
     return {
-      sign,
-      revenue,
-      cogs,
-      gp,
-      margin: revenue !== 0 ? gp / revenue : 0,
+      sign: 0,
+      revenue: 0,
+      cogs: 0,
+      gp: 0,
+      margin: 0,
       paid,
       refunded,
-      balance: revenue - paid,
-      derivedStatus: "RETURNED",
-      statusLabel: "Returned",
-      tone: "danger",
+      balance,
+      derivedStatus: balance < 0 ? "PENDING" : "RETURNED",
+      statusLabel: balance < 0 ? "Returned (refund due)" : "Returned",
+      tone: balance < 0 ? "warning" : "danger",
       hasPartialReturns: partialReturns,
     };
   }

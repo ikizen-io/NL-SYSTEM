@@ -32,7 +32,7 @@ export default async function ReportsPage() {
 
   const inventoryRows = computeInventoryRows(variants);
   const lowStockRows = inventoryRows
-    .filter((row) => row.currentStock <= 1)
+    .filter((row) => row.currentStock <= row.reorderPoint)
     .sort((a, b) => a.currentStock - b.currentStock || a.sku.localeCompare(b.sku));
 
   const totalUnits = inventoryRows.reduce(
@@ -41,7 +41,7 @@ export default async function ReportsPage() {
   );
   const totalValuation = inventoryRows.reduce((sum, row) => sum + row.stockValue, 0);
 
-  // outstanding balances — issued invoices only
+  // outstanding balances - issued invoices only
   const outstandingRows = allIssuedInvoices
     .filter((inv) => inv.status === "ISSUED")
     .map((invoice) => ({ invoice, stats: invoiceStatsFromRecord(invoice) }))
@@ -53,16 +53,19 @@ export default async function ReportsPage() {
     0,
   );
 
-  // cash received vs revenue
+  // cash received vs revenue (net of refunds)
   const totalRevenue = allIssuedInvoices.reduce((sum, inv) => {
     const stats = invoiceStatsFromRecord(inv);
     return sum + stats.revenue;
   }, 0);
   const totalCashReceived = allIssuedInvoices.reduce((sum, inv) => {
     const stats = invoiceStatsFromRecord(inv);
-    return sum + stats.paid;
+    return sum + Math.max(0, stats.paid - stats.refunded);
   }, 0);
-  const totalPending = totalRevenue - totalCashReceived;
+  const totalPending = outstandingRows.reduce(
+    (sum, row) => sum + row.stats.balance,
+    0,
+  );
 
   // product profitability by brand + model
   type ProfitRow = {
@@ -220,7 +223,7 @@ export default async function ReportsPage() {
             <div className="mt-1 text-xs text-zinc-500">
               {totalRevenue > 0
                 ? `${formatPct(totalCashReceived / totalRevenue)} of revenue`
-                : "—"}
+                : "-"}
             </div>
           </div>
           <div className="bg-white p-4">
@@ -256,7 +259,7 @@ export default async function ReportsPage() {
               {outstandingRows.length === 0 ? (
                 <tr>
                   <TD className="py-6 text-zinc-500" colSpan={6}>
-                    No outstanding invoices — all issued sales are paid in full.
+                    No outstanding invoices - all issued sales are paid in full.
                   </TD>
                 </tr>
               ) : (
@@ -278,7 +281,7 @@ export default async function ReportsPage() {
                             {invoice.customer.name}
                           </Link>
                         ) : (
-                          "—"
+                          "-"
                         )}
                       </TD>
                       <TD className="text-zinc-600">
@@ -338,7 +341,7 @@ export default async function ReportsPage() {
                     </TD>
                     <TD align="right">
                       <Badge tone={row.gp >= 0 ? "success" : "danger"}>
-                        {row.revenue > 0 ? formatPct(row.gp / row.revenue) : "—"}
+                        {row.revenue > 0 ? formatPct(row.gp / row.revenue) : "-"}
                       </Badge>
                     </TD>
                   </tr>
@@ -380,7 +383,7 @@ export default async function ReportsPage() {
                     <TD align="right">
                       {totalExpenses > 0
                         ? formatPct(row.total / totalExpenses)
-                        : "—"}
+                        : "-"}
                     </TD>
                   </tr>
                 ))
@@ -427,7 +430,7 @@ export default async function ReportsPage() {
                       {row.modelName}
                       <span className="text-zinc-500">
                         {" "}
-                        • {row.sizeLabel}
+                        - {row.sizeLabel}
                         {row.color ? ` / ${row.color}` : ""}
                       </span>
                     </TD>
@@ -437,7 +440,7 @@ export default async function ReportsPage() {
                       </Badge>
                     </TD>
                     <TD align="right">
-                      {row.targetPrice ? formatLkr(row.targetPrice) : "—"}
+                      {row.targetPrice ? formatLkr(row.targetPrice) : "-"}
                     </TD>
                   </tr>
                 ))

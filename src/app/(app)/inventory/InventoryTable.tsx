@@ -69,9 +69,14 @@ export function InventoryTable({
 
     // stock level filter
     if (stockFilter === "in-stock") {
-      result = result.filter((r) => r.active && r.currentStock > 1);
+      result = result.filter((r) => r.active && r.currentStock > 0);
     } else if (stockFilter === "low-stock") {
-      result = result.filter((r) => r.active && r.currentStock === 1);
+      result = result.filter(
+        (r) =>
+          r.active &&
+          r.currentStock > 0 &&
+          r.currentStock <= r.reorderPoint,
+      );
     } else if (stockFilter === "out-of-stock") {
       result = result.filter((r) => r.active && r.currentStock <= 0);
     }
@@ -144,8 +149,8 @@ export function InventoryTable({
             className="h-8 text-sm w-44"
           >
             <option value="all">All stock levels</option>
-            <option value="in-stock">In stock (&gt;1)</option>
-            <option value="low-stock">Low stock (= 1)</option>
+            <option value="in-stock">In stock (&gt;0)</option>
+            <option value="low-stock">At / below reorder</option>
             <option value="out-of-stock">Out of stock</option>
           </Select>
 
@@ -255,7 +260,11 @@ export function InventoryTable({
                     ? (row.targetPrice - row.unitCost) / row.targetPrice
                     : 0;
                 const outOfStock = row.active && row.currentStock <= 0;
-                const lowStock = row.active && row.currentStock === 1;
+                const oversold = row.active && row.currentStock < 0;
+                const lowStock =
+                  row.active &&
+                  row.currentStock > 0 &&
+                  row.currentStock <= row.reorderPoint;
                 return (
                   <tr
                     key={row.sku}
@@ -321,6 +330,8 @@ export function InventoryTable({
                     <TD align="right">
                       {!row.active ? (
                         <Badge tone="neutral">Archived</Badge>
+                      ) : oversold ? (
+                        <Badge tone="danger">{row.currentStock} owed</Badge>
                       ) : outOfStock ? (
                         <Badge tone="danger">0 out</Badge>
                       ) : (

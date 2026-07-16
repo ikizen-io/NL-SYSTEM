@@ -119,6 +119,14 @@ export function CreateSkuForm({
         <Input name="targetPrice" type="number" placeholder="e.g. 22000" />
       </div>
 
+      <div>
+        <Label>Reorder point</Label>
+        <Input name="reorderPoint" type="number" min={0} step={1} defaultValue={1} />
+        <div className="mt-1 text-[11px] text-zinc-500">
+          Flag low stock at or below this quantity.
+        </div>
+      </div>
+
       <div className="md:col-span-2">
         <Label>Photo</Label>
         <div className="flex items-center gap-3">

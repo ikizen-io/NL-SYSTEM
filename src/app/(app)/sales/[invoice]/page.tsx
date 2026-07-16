@@ -13,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Page, PageActions, PageDescription, PageHeader, PageTitle } from "@/components/ui/page";
 import { ArrowLeft, Printer } from "lucide-react";
 import { formatLkr } from "@/lib/format";
+import { customerSlug } from "@/lib/invoices";
 import { cn } from "@/lib/cn";
 import { paymentMethodLabel } from "@/lib/payment-methods";
 import { AddPaymentForm } from "./AddPaymentForm";
@@ -170,6 +171,7 @@ export default async function InvoiceDetailPage({
           <div className="flex items-center gap-2">
             <PageTitle>{inv.invoiceNo}</PageTitle>
             <Badge tone={stats.tone}>{stats.statusLabel}</Badge>
+            {inv.isPreOrder ? <Badge tone="info">Pre-order</Badge> : null}
           </div>
           <PageDescription className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5">
             <span>{inv.issuedDate.toISOString().slice(0, 10)}</span>
@@ -178,7 +180,7 @@ export default async function InvoiceDetailPage({
                 <span className="text-zinc-300">·</span>
                 <Link
                   prefetch={false}
-                  href={`/customers/${encodeURIComponent(inv.customer.name.toLowerCase().replace(/\s+/g, "-"))}`}
+                  href={`/customers/${customerSlug(inv.customer.name)}`}
                   className="hover:underline"
                 >
                   {inv.customer.name}
@@ -211,6 +213,25 @@ export default async function InvoiceDetailPage({
                 <span className="text-zinc-300">·</span>
                 <span className={cn("font-semibold text-amber-700")}>
                   Due {formatLkr(stats.balance)}
+                </span>
+              </>
+            )}
+            {stats.balance < 0 && (
+              <>
+                <span className="text-zinc-300">·</span>
+                <span className="font-semibold text-rose-700">
+                  Refund due {formatLkr(Math.abs(stats.balance))}
+                </span>
+              </>
+            )}
+            {stats.refunded > 0 && (
+              <>
+                <span className="text-zinc-300">·</span>
+                <span>
+                  Refunded{" "}
+                  <span className="font-medium text-zinc-800">
+                    {formatLkr(stats.refunded)}
+                  </span>
                 </span>
               </>
             )}
@@ -301,6 +322,9 @@ export default async function InvoiceDetailPage({
                   lines={returnFormLines}
                   skus={saleSkus}
                   paid={stats.paid}
+                  refunded={stats.refunded}
+                  shippingCharge={inv.shippingCharge}
+                  discountAmount={inv.discountAmount}
                   balance={stats.balance}
                 />
               </CardContent>
@@ -365,6 +389,7 @@ export default async function InvoiceDetailPage({
                   invoiceSlug={invoice}
                   invoiceNo={inv.invoiceNo}
                   status={inv.status}
+                  hasPayments={inv.payments.length > 0}
                 />
               </CardContent>
             </Card>

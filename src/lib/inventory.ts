@@ -17,6 +17,7 @@ export type InventoryRow = {
   unitCost: number;
   targetPrice: number | null;
   imageUrl: string | null;
+  reorderPoint: number;
   soldQty: number;
   currentStock: number;
   hasHistory: boolean;
@@ -59,6 +60,7 @@ export function computeInventoryRow(variant: {
   active: boolean;
   targetPrice: number | null;
   imageUrl?: string | null;
+  reorderPoint?: number | null;
   product: { brand: string; category: string; modelName: string };
   stockIns: VariantStockSource["stockIns"];
   adjustments: VariantStockSource["adjustments"];
@@ -70,6 +72,10 @@ export function computeInventoryRow(variant: {
     0,
   );
   const currentStockQty = currentStock(variant);
+  const reorderPoint =
+    typeof variant.reorderPoint === "number" && variant.reorderPoint >= 0
+      ? variant.reorderPoint
+      : 1;
 
   return {
     sku: variant.sku,
@@ -82,6 +88,7 @@ export function computeInventoryRow(variant: {
     unitCost,
     targetPrice: variant.targetPrice,
     imageUrl: variant.imageUrl ?? null,
+    reorderPoint,
     soldQty: Math.max(0, soldQty),
     currentStock: currentStockQty,
     hasHistory:

@@ -2,15 +2,7 @@
 
 import { useActionState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { ConfirmActionForm } from "@/components/ui/confirm-action";
 import { ActionStateBanner } from "@/components/ui/form-patterns";
 import { Label } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
@@ -21,10 +13,12 @@ export function InvoiceStatusPanel({
   invoiceSlug,
   invoiceNo,
   status,
+  hasPayments,
 }: {
   invoiceSlug: string;
   invoiceNo: string;
   status: string;
+  hasPayments: boolean;
 }) {
   const [state, formAction, pending] = useActionState(setInvoiceStatus, {});
 
@@ -57,8 +51,19 @@ export function InvoiceStatusPanel({
         </div>
       </form>
 
-      <Dialog>
-        <DialogTrigger asChild>
+      <ConfirmActionForm
+        action={voidInvoice}
+        fields={{ invoiceNo: invoiceSlug }}
+        title={`Void ${invoiceNo}?`}
+        description={
+          hasPayments
+            ? "Voiding releases stock and removes this sale from revenue. If money was collected, record a refund on the Returns tab first — void is blocked until the deposit is settled."
+            : "This keeps the invoice number and history, releases stock, and removes this sale from revenue."
+        }
+        confirmLabel="Confirm void"
+        successMessage="Invoice voided"
+        disabled={status === "CANCELLED"}
+        trigger={
           <Button
             type="button"
             variant="danger"
@@ -67,34 +72,13 @@ export function InvoiceStatusPanel({
           >
             Void invoice
           </Button>
-        </DialogTrigger>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Void {invoiceNo}?</DialogTitle>
-            <DialogDescription>
-              This keeps the invoice number and history, releases stock, and
-              removes this sale from revenue.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="mt-4 flex justify-end gap-2">
-            <DialogClose asChild>
-              <Button type="button" variant="outline">
-                Cancel
-              </Button>
-            </DialogClose>
-            <form action={voidInvoice}>
-              <input type="hidden" name="invoiceNo" value={invoiceSlug} />
-              <Button type="submit" variant="danger">
-                Confirm void
-              </Button>
-            </form>
-          </div>
-        </DialogContent>
-      </Dialog>
+        }
+      />
 
       <p className="text-xs text-zinc-500">
-        For line-level returns or exchanges, use the Returns tab. Full return
-        restocks remaining qty and reverses revenue.
+        Prefer the Returns tab for cancellations with deposits or goods coming
+        back. Full status return releases stock without creating a restock
+        adjustment (use Returns if you need restock).
       </p>
     </div>
   );

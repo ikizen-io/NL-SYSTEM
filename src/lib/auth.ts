@@ -5,7 +5,17 @@ const SESSION_MAX_AGE = 60 * 60 * 24 * 30; // 30 days
 const encoder = new TextEncoder();
 
 function getSecret(): string {
-  return process.env.AUTH_SECRET || "change-me-in-production";
+  const secret = process.env.AUTH_SECRET?.trim();
+  if (process.env.AUTH_PASSWORD) {
+    if (!secret || secret === "change-me-in-production") {
+      throw new Error(
+        "AUTH_SECRET must be set to a strong random value when AUTH_PASSWORD is enabled.",
+      );
+    }
+    return secret;
+  }
+  // Auth disabled in this environment — only used if a stale cookie is present.
+  return secret || "dev-auth-disabled";
 }
 
 function bytesToHex(bytes: ArrayBuffer) {

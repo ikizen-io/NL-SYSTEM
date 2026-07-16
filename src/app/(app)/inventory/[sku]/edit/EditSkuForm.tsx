@@ -27,6 +27,7 @@ export function EditSkuForm({
     color: string | null;
     targetPrice: number | null;
     imageUrl: string | null;
+    reorderPoint: number;
     product: {
       brand: string;
       category: string;
@@ -148,6 +149,19 @@ export function EditSkuForm({
           step={1}
           defaultValue={variant.targetPrice ?? ""}
         />
+      </div>
+      <div>
+        <Label>Reorder point</Label>
+        <Input
+          name="reorderPoint"
+          type="number"
+          min={0}
+          step={1}
+          defaultValue={variant.reorderPoint}
+        />
+        <div className="mt-1 text-[11px] text-zinc-500">
+          Flag low stock at or below this quantity.
+        </div>
       </div>
 
       <div className="md:col-span-2">

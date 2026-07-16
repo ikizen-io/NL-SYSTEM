@@ -89,7 +89,12 @@ describe("buildSalesInvoiceWhere", () => {
     expect(pendingWhere).toEqual({ AND: [{ status: "ISSUED" }] });
   });
 
-  it("passes through CANCELLED/RETURNED status filters directly", () => {
+  it("maps RETURNED status filter to ISSUED or RETURNED for post-filtering", () => {
+    const where = buildSalesInvoiceWhere(parseSalesFilters({ status: "RETURNED" }));
+    expect(where).toEqual({ AND: [{ status: { in: ["ISSUED", "RETURNED"] } }] });
+  });
+
+  it("passes through CANCELLED status filters directly", () => {
     const where = buildSalesInvoiceWhere(parseSalesFilters({ status: "CANCELLED" }));
     expect(where).toEqual({ AND: [{ status: "CANCELLED" }] });
   });

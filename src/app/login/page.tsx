@@ -19,7 +19,9 @@ export default async function LoginPage({
 
         {hasError ? (
           <div className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700 ring-1 ring-inset ring-red-200">
-            Incorrect username or password.
+            {sp.error === "rate"
+              ? "Too many failed sign-in attempts. Try again in about 15 minutes."
+              : "Incorrect username or password."}
           </div>
         ) : null}
 

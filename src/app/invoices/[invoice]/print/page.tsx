@@ -2,6 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { formatLkr } from "@/lib/format";
+import { invoiceFinancialsFromRecord } from "@/lib/invoices";
+import { toReturnRecordInput } from "@/lib/invoice-queries";
 import { paymentMethodLabel } from "@/lib/payment-methods";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/cn";
@@ -21,15 +23,6 @@ function invoiceLookup(invoice: string) {
   };
 }
 
-type StatusKey = "PAID" | "ISSUED" | "VOID" | "RETURNED";
-
-function statusTone(statusKey: StatusKey): "success" | "warning" | "neutral" | "danger" {
-  if (statusKey === "PAID") return "success";
-  if (statusKey === "ISSUED") return "warning";
-  if (statusKey === "RETURNED") return "danger";
-  return "neutral";
-}
-
 export default async function PrintableInvoicePage({
   params,
 }: {
@@ -43,46 +36,54 @@ export default async function PrintableInvoicePage({
       customer: true,
       items: { include: { variant: { include: { product: true } } } },
       payments: { orderBy: { date: "asc" } },
+      returnRecords: { include: { items: true } },
     },
   });
 
   if (!inv) notFound();
 
-  const itemsTotal = inv.items.reduce(
-    (sum, item) => sum + item.qty * item.unitPrice,
-    0,
-  );
-  const grandTotal = itemsTotal + inv.shippingCharge - inv.discountAmount;
-  const paid = inv.payments.reduce((sum, payment) => sum + payment.amount, 0);
-  const balance = grandTotal - paid;
-  const statusKey: StatusKey =
-    inv.status === "CANCELLED"
-      ? "VOID"
-      : inv.status === "RETURNED"
-        ? "RETURNED"
-        : balance <= 0
-          ? "PAID"
-          : "ISSUED";
-  const statusLabel =
-    statusKey === "PAID"
-      ? "Paid"
-      : statusKey === "ISSUED"
-        ? "Issued"
-        : statusKey === "VOID"
-          ? "Void"
-          : "Returned";
+  const returnRecords = toReturnRecordInput(inv.returnRecords);
+  const stats = invoiceFinancialsFromRecord({
+    status: inv.status,
+    shippingCharge: inv.shippingCharge,
+    discountAmount: inv.discountAmount,
+    items: inv.items,
+    payments: inv.payments,
+    returnRecords,
+  });
+
+  const returnedByItem = new Map<string, number>();
+  for (const record of inv.returnRecords) {
+    for (const item of record.items) {
+      returnedByItem.set(
+        item.invoiceItemId,
+        (returnedByItem.get(item.invoiceItemId) ?? 0) + item.qty,
+      );
+    }
+  }
+
+  const printLines = inv.items
+    .map((item) => {
+      const returnedQty = returnedByItem.get(item.id) ?? 0;
+      const netQty = Math.max(0, item.qty - returnedQty);
+      return { item, netQty, returnedQty };
+    })
+    .filter((line) => line.netQty > 0 || inv.status === "RETURNED");
+
+  const statusLabel = stats.statusLabel;
+  const statusTone = stats.tone;
 
   const addressLines = (inv.customer?.address ?? "")
     .split(/\r?\n|,\s*/)
     .map((line) => line.trim())
     .filter(Boolean);
 
-  // Push bank/contact footer to page 2 only when the core invoice is long.
   const appendixOnNewPage =
-    inv.items.length > 4 ||
+    printLines.length > 4 ||
     inv.payments.length > 2 ||
     (inv.notes?.length ?? 0) > 180 ||
-    addressLines.length > 3;
+    addressLines.length > 3 ||
+    inv.returnRecords.length > 0;
 
   return (
     <main className="min-h-screen bg-zinc-100 px-4 py-6 text-zinc-950 print:min-h-0 print:bg-white print:p-0">
@@ -122,8 +123,10 @@ export default async function PrintableInvoicePage({
               <div className="flex items-center gap-2">
                 <span className="font-semibold text-zinc-950">Status:</span>
                 <Badge
-                  tone={statusTone(statusKey)}
-                  className={statusKey === "VOID" ? "line-through" : undefined}
+                  tone={statusTone}
+                  className={
+                    stats.derivedStatus === "CANCELLED" ? "line-through" : undefined
+                  }
                 >
                   {statusLabel}
                 </Badge>
@@ -181,7 +184,7 @@ export default async function PrintableInvoicePage({
           </div>
 
           <div className="md:col-span-2 print:col-span-2">
-            {statusKey === "PAID" ? (
+            {stats.derivedStatus === "COMPLETED" ? (
               <div className="print-exact flex h-full flex-col justify-between rounded-2xl bg-emerald-600 p-5 text-white">
                 <div className="text-xs font-semibold uppercase tracking-[0.24em] text-emerald-100">
                   Status
@@ -190,15 +193,21 @@ export default async function PrintableInvoicePage({
                 <div className="mt-3 grid gap-1 text-xs text-emerald-50">
                   <div className="flex justify-between">
                     <span>Grand total</span>
-                    <span className="tabular-nums">{formatLkr(grandTotal)}</span>
+                    <span className="tabular-nums">{formatLkr(stats.revenue)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Paid</span>
-                    <span className="tabular-nums">{formatLkr(paid)}</span>
+                    <span className="tabular-nums">{formatLkr(stats.paid)}</span>
                   </div>
+                  {stats.refunded > 0 ? (
+                    <div className="flex justify-between">
+                      <span>Refunded</span>
+                      <span className="tabular-nums">{formatLkr(stats.refunded)}</span>
+                    </div>
+                  ) : null}
                 </div>
               </div>
-            ) : statusKey === "VOID" ? (
+            ) : stats.derivedStatus === "CANCELLED" ? (
               <div className="print-exact flex h-full flex-col justify-between rounded-2xl bg-zinc-200 p-5 text-zinc-700">
                 <div className="text-xs font-semibold uppercase tracking-[0.24em]">
                   Status
@@ -208,22 +217,45 @@ export default async function PrintableInvoicePage({
                   This invoice has been cancelled and is not collectible.
                 </div>
               </div>
+            ) : stats.balance < 0 ? (
+              <div className="print-exact flex h-full flex-col justify-between rounded-2xl bg-rose-700 p-5 text-white">
+                <div className="text-xs font-semibold uppercase tracking-[0.24em] text-rose-100">
+                  Refund due
+                </div>
+                <div className="mt-1 text-3xl font-semibold tabular-nums">
+                  {formatLkr(Math.abs(stats.balance))}
+                </div>
+                <div className="mt-3 grid gap-1 text-xs text-rose-50">
+                  <div className="flex justify-between">
+                    <span>Net total</span>
+                    <span className="tabular-nums">{formatLkr(stats.revenue)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Paid</span>
+                    <span className="tabular-nums">{formatLkr(stats.paid)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Refunded</span>
+                    <span className="tabular-nums">{formatLkr(stats.refunded)}</span>
+                  </div>
+                </div>
+              </div>
             ) : (
               <div className="print-exact flex h-full flex-col justify-between rounded-2xl bg-zinc-950 p-5 text-white">
                 <div className="text-xs font-semibold uppercase tracking-[0.24em] text-zinc-400">
                   Amount Due
                 </div>
                 <div className="mt-1 text-3xl font-semibold tabular-nums">
-                  {formatLkr(balance)}
+                  {formatLkr(stats.balance)}
                 </div>
                 <div className="mt-3 grid gap-1 text-xs text-zinc-300">
                   <div className="flex justify-between">
                     <span>Grand total</span>
-                    <span className="tabular-nums">{formatLkr(grandTotal)}</span>
+                    <span className="tabular-nums">{formatLkr(stats.revenue)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Paid</span>
-                    <span className="tabular-nums">{formatLkr(paid)}</span>
+                    <span className="tabular-nums">{formatLkr(stats.paid)}</span>
                   </div>
                 </div>
               </div>
@@ -242,7 +274,11 @@ export default async function PrintableInvoicePage({
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-200">
-            {inv.items.map((item, index) => (
+            {(printLines.length > 0 ? printLines : inv.items.map((item) => ({
+              item,
+              netQty: item.qty,
+              returnedQty: 0,
+            }))).map(({ item, netQty, returnedQty }, index) => (
               <tr key={item.id}>
                 <td className="px-3 py-4 text-zinc-500">{index + 1}</td>
                 <td className="px-3 py-4">
@@ -253,16 +289,17 @@ export default async function PrintableInvoicePage({
                     {item.variant.sizeLabel}
                     {item.variant.color ? ` • ${item.variant.color}` : ""} • SKU{" "}
                     {item.variant.sku}
+                    {returnedQty > 0 ? ` • Returned ${returnedQty}` : ""}
                   </div>
                 </td>
                 <td className="px-3 py-4 text-right tabular-nums text-zinc-950">
-                  {item.qty}
+                  {netQty}
                 </td>
                 <td className="px-3 py-4 text-right tabular-nums text-zinc-950">
                   {formatLkr(item.unitPrice)}
                 </td>
                 <td className="px-3 py-4 text-right font-medium tabular-nums text-zinc-950">
-                  {formatLkr(item.qty * item.unitPrice)}
+                  {formatLkr(netQty * item.unitPrice)}
                 </td>
               </tr>
             ))}
@@ -271,22 +308,39 @@ export default async function PrintableInvoicePage({
 
         <section className="print-avoid-break mt-8 flex justify-end print:mt-6">
           <div className="w-full max-w-sm overflow-hidden rounded-2xl border border-zinc-200">
-            <TotalRow label="Items total" value={formatLkr(itemsTotal)} />
-            {inv.shippingCharge > 0 ? (
+            <TotalRow
+              label="Items total"
+              value={formatLkr(
+                printLines.reduce(
+                  (sum, line) => sum + line.netQty * line.item.unitPrice,
+                  0,
+                ),
+              )}
+            />
+            {inv.shippingCharge > 0 && stats.revenue > 0 ? (
               <TotalRow label="Shipping" value={formatLkr(inv.shippingCharge)} />
             ) : null}
-            {inv.discountAmount > 0 ? (
+            {inv.discountAmount > 0 && stats.revenue > 0 ? (
               <TotalRow
                 label="Discount"
                 value={`- ${formatLkr(inv.discountAmount)}`}
                 muted
               />
             ) : null}
-            <TotalRow label="Grand total" value={formatLkr(grandTotal)} strong />
-            <TotalRow label="Paid" value={formatLkr(paid)} />
+            <TotalRow label="Grand total" value={formatLkr(stats.revenue)} strong />
+            <TotalRow label="Paid" value={formatLkr(stats.paid)} />
+            {stats.refunded > 0 ? (
+              <TotalRow label="Refunded" value={formatLkr(stats.refunded)} />
+            ) : null}
             <TotalRow
-              label={statusKey === "PAID" ? "Balance" : "Balance due"}
-              value={formatLkr(balance)}
+              label={
+                stats.balance < 0
+                  ? "Refund due"
+                  : stats.derivedStatus === "COMPLETED"
+                    ? "Balance"
+                    : "Balance due"
+              }
+              value={formatLkr(Math.abs(stats.balance))}
               strong
               dark
             />

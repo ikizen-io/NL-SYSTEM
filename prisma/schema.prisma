@@ -48,6 +48,7 @@ model Variant {
   color       String?
   targetPrice Int?
   imageUrl    String?
+  reorderPoint Int     @default(1)
   active      Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -84,6 +85,7 @@ model Invoice {
   shippingCharge Int       @default(0)
   discountAmount Int       @default(0)
   preferredPaymentMethod PaymentMethod?
+  isPreOrder Boolean       @default(false)
 
   customerId String?
   customer   Customer?     @relation(fields: [customerId], references: [id], onDelete: SetNull)

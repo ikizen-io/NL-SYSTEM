@@ -77,18 +77,38 @@ describe("invoiceFinancials", () => {
     expect(result.derivedStatus).toBe("CANCELLED");
   });
 
-  it("returns negative revenue for RETURNED status", () => {
+  it("treats DB RETURNED status like a fully-returned settled invoice", () => {
     const result = invoiceFinancials({
       status: "RETURNED",
       shippingCharge: 500,
       discountAmount: 0,
       items: [makeItem("i1", 1, 15000, 10000)],
+      payments: [makePayment(15000)],
+      returnRecords: [makeReturnRecord(15000, [{ invoiceItemId: "i1", qty: 1 }])],
     });
 
-    expect(result.revenue).toBe(-15500); // -1 * (15000 + 500)
-    expect(result.sign).toBe(-1);
+    expect(result.revenue).toBe(0);
+    expect(result.cogs).toBe(0);
+    expect(result.gp).toBe(0);
+    expect(result.sign).toBe(0);
+    expect(result.balance).toBe(0);
     expect(result.derivedStatus).toBe("RETURNED");
     expect(result.tone).toBe("danger");
+  });
+
+  it("flags refund due on DB RETURNED when payments exceed refunds", () => {
+    const result = invoiceFinancials({
+      status: "RETURNED",
+      shippingCharge: 0,
+      discountAmount: 0,
+      items: [makeItem("i1", 1, 15000, 10000)],
+      payments: [makePayment(12500)],
+    });
+
+    expect(result.revenue).toBe(0);
+    expect(result.balance).toBe(-12500);
+    expect(result.statusLabel).toBe("Returned (refund due)");
+    expect(result.tone).toBe("warning");
   });
 
   it("reduces revenue and COGS for partial returns", () => {

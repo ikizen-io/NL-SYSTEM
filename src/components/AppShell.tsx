@@ -204,7 +204,11 @@ export function AppShell({
               <div className="hidden flex-1 justify-center px-4 md:flex">
                 <GlobalSearch />
               </div>
-              <div className="hidden items-center gap-2 sm:flex">
+              <div className="flex items-center gap-2">
+                <div className="md:hidden">
+                  <GlobalSearch variant="icon" />
+                </div>
+                <div className="hidden items-center gap-2 sm:flex">
                 {quickActions.map((action) => {
                   const Icon = action.icon;
                   return (
@@ -221,6 +225,7 @@ export function AppShell({
                     </Button>
                   );
                 })}
+                </div>
               </div>
             </div>
           </header>

@@ -217,6 +217,7 @@ export async function createSale(
           shippingCharge,
           discountAmount,
           preferredPaymentMethod: v.preferredPaymentMethod as PaymentMethod,
+          isPreOrder,
           customerId: customer.id,
           items: {
             create: v.items.map((it) => {

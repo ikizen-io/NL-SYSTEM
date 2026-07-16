@@ -80,8 +80,12 @@ export function buildSalesInvoiceWhere(
     });
   }
 
-  if (filters.status === "CANCELLED" || filters.status === "RETURNED") {
+  if (filters.status === "CANCELLED") {
     clauses.push({ status: filters.status });
+  } else if (filters.status === "RETURNED") {
+    // Include ISSUED invoices that are fully returned via the Returns tab;
+    // post-filter with filterInvoicesByDerivedStatus.
+    clauses.push({ status: { in: ["ISSUED", "RETURNED"] } });
   } else if (filters.status === "ISSUED") {
     clauses.push({ status: "ISSUED" });
   } else if (filters.status === "paid" || filters.status === "pending") {
@@ -96,6 +100,16 @@ export function filterInvoicesByDerivedStatus<T extends Parameters<typeof invoic
   invoices: T[],
   status: string,
 ): T[] {
+  if (status === "RETURNED") {
+    return invoices.filter((invoice) => {
+      const financials = invoiceFinancials(invoice);
+      return (
+        invoice.status === "RETURNED" ||
+        financials.derivedStatus === "RETURNED" ||
+        financials.statusLabel.startsWith("Returned")
+      );
+    });
+  }
   if (status !== "paid" && status !== "pending") return invoices;
   return invoices.filter((invoice) => {
     const { derivedStatus } = invoiceFinancials(invoice);

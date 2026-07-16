@@ -111,18 +111,27 @@ export async function importInventory(
           (await tx.product.findFirst({ where: { brand, category, modelName } })) ??
           (await tx.product.create({ data: { brand, category, modelName } }));
 
-        const variant =
-          (await tx.variant.findUnique({ where: { sku } })) ??
-          (await tx.variant.create({
-            data: {
-              productId: product.id,
-              sku,
-              sizeLabel,
-              targetPrice: Number.isFinite(v.targetPrice as number)
-                ? Number(v.targetPrice)
-                : null,
-            },
-          }));
+        const existingVariant = await tx.variant.findUnique({ where: { sku } });
+        if (existingVariant) {
+          skipped++;
+          if (skipReasons.length < MAX_SKIP_REASONS) {
+            skipReasons.push(
+              `Row ${rowNumber}: SKU ${sku} already exists — skipped (use Receive purchase to add stock).`,
+            );
+          }
+          continue;
+        }
+
+        const variant = await tx.variant.create({
+          data: {
+            productId: product.id,
+            sku,
+            sizeLabel,
+            targetPrice: Number.isFinite(v.targetPrice as number)
+              ? Number(v.targetPrice)
+              : null,
+          },
+        });
 
         if (v.openingQty > 0) {
           await tx.stockIn.create({

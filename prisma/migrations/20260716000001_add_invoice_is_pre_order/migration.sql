@@ -1,0 +1,1 @@
+ALTER TABLE "Invoice" ADD COLUMN "isPreOrder" BOOLEAN NOT NULL DEFAULT false;

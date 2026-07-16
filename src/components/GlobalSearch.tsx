@@ -17,7 +17,11 @@ import { cn } from "@/lib/cn";
 
 const EMPTY_RESULTS: GlobalSearchResults = { customers: [], invoices: [], skus: [] };
 
-export function GlobalSearch() {
+export function GlobalSearch({
+  variant = "full",
+}: {
+  variant?: "full" | "icon";
+}) {
   const router = useRouter();
   const [open, setOpen] = React.useState(false);
   const [query, setQuery] = React.useState("");
@@ -86,17 +90,29 @@ export function GlobalSearch() {
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="flex w-full max-w-[220px] items-center gap-2 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-1.5 text-sm text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-700"
-      >
-        <Search className="h-3.5 w-3.5 shrink-0" />
-        <span className="truncate">Search...</span>
-        <kbd className="ml-auto hidden shrink-0 rounded border border-zinc-200 bg-white px-1.5 py-0.5 text-[10px] font-medium text-zinc-400 sm:inline-block">
-          ⌘K
-        </kbd>
-      </button>
+      {variant === "icon" ? (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-600 transition-colors hover:bg-zinc-50 hover:text-zinc-950"
+          title="Search"
+        >
+          <Search className="h-4 w-4" />
+          <span className="sr-only">Search</span>
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="flex w-full max-w-[220px] items-center gap-2 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-1.5 text-sm text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-700"
+        >
+          <Search className="h-3.5 w-3.5 shrink-0" />
+          <span className="truncate">Search...</span>
+          <kbd className="ml-auto hidden shrink-0 rounded border border-zinc-200 bg-white px-1.5 py-0.5 text-[10px] font-medium text-zinc-400 sm:inline-block">
+            ⌘K
+          </kbd>
+        </button>
+      )}
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-lg gap-0 p-0">

@@ -44,6 +44,10 @@ export function ReturnExchangeForm({
   disabled,
   lines,
   skus,
+  paid,
+  refunded = 0,
+  shippingCharge = 0,
+  discountAmount = 0,
   balance,
 }: {
   invoiceNo: string;
@@ -52,6 +56,9 @@ export function ReturnExchangeForm({
   lines: ReturnLine[];
   skus: SaleSku[];
   paid: number;
+  refunded?: number;
+  shippingCharge?: number;
+  discountAmount?: number;
   balance: number;
 }) {
   const [returnLines, setReturnLines] = useState<
@@ -87,6 +94,48 @@ export function ReturnExchangeForm({
 
   const activeReturns = returnLines.filter((line) => line.returnQty > 0);
 
+  const suggestedRefund = useMemo(() => {
+    if (activeReturns.length === 0) {
+      return balance < 0 ? Math.abs(balance) : 0;
+    }
+
+    const returnedById = new Map<string, number>();
+    for (const line of activeReturns) {
+      returnedById.set(
+        line.invoiceItemId,
+        (returnedById.get(line.invoiceItemId) ?? 0) + line.returnQty,
+      );
+    }
+
+    let itemsRevenue = 0;
+    let allFullyReturned = lines.length > 0;
+    for (const line of lines) {
+      const returning = returnedById.get(line.invoiceItemId) ?? 0;
+      const keptFromAvailable = Math.max(0, line.availableQty - returning);
+      itemsRevenue += keptFromAvailable * line.unitPrice;
+      if (keptFromAvailable > 0) allFullyReturned = false;
+    }
+
+    const exchangeRevenue = exchangeLines
+      .filter((line) => line.sku && line.qty > 0)
+      .reduce((sum, line) => sum + line.qty * line.unitPrice, 0);
+
+    const shipping = allFullyReturned ? 0 : shippingCharge;
+    const discount = allFullyReturned ? 0 : discountAmount;
+    const projectedRevenue = itemsRevenue + exchangeRevenue + shipping - discount;
+    const refundable = Math.max(0, paid - refunded);
+    return Math.max(0, Math.min(refundable, paid - refunded - projectedRevenue));
+  }, [
+    activeReturns,
+    balance,
+    discountAmount,
+    exchangeLines,
+    lines,
+    paid,
+    refunded,
+    shippingCharge,
+  ]);
+
   const skuOptions = useMemo(
     () =>
       skus.map((sku) => ({
@@ -101,8 +150,6 @@ export function ReturnExchangeForm({
     refundAmount.trim() === "" || !Number.isFinite(parsedRefund)
       ? 0
       : Math.max(0, parsedRefund);
-
-  const suggestedRefund = balance < 0 ? Math.abs(balance) : 0;
 
   if (disabled) {
     return (
@@ -353,8 +400,15 @@ export function ReturnExchangeForm({
         </div>
         {suggestedRefund > 0 ? (
           <p className="mt-2 text-xs text-amber-700">
-            Customer may be owed up to {formatLkr(suggestedRefund)} based on
-            current balance ({formatLkr(balance)}).
+            Suggested refund {formatLkr(suggestedRefund)} to settle collected
+            payments after this return.{" "}
+            <button
+              type="button"
+              className="underline hover:text-amber-900"
+              onClick={() => setRefundAmount(String(suggestedRefund))}
+            >
+              Use amount
+            </button>
           </p>
         ) : null}
         {refundValue > 0 ? (

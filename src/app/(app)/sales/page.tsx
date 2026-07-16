@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Ban, MoreHorizontal, Pencil, Printer } from "lucide-react";
 import { voidInvoice } from "./[invoice]/actions";
+import { ConfirmActionForm } from "@/components/ui/confirm-action";
 import { cn } from "@/lib/cn";
 
 export const dynamic = "force-dynamic";
@@ -61,7 +62,9 @@ export default async function SalesPage({
   const filters = parseSalesFilters(sp);
   const invoiceWhere = buildSalesInvoiceWhere(filters);
   const usesDerivedStatus =
-    filters.status === "paid" || filters.status === "pending";
+    filters.status === "paid" ||
+    filters.status === "pending" ||
+    filters.status === "RETURNED";
 
   const [variants, customers, products] = await Promise.all([
     prisma.variant.findMany({
@@ -223,6 +226,7 @@ export default async function SalesPage({
                 <TH>Status</TH>
                 <TH align="right">Total</TH>
                 <TH align="right">Paid</TH>
+                <TH align="right">Refunded</TH>
                 <TH align="right">Balance</TH>
                 <TH align="right">GP</TH>
                 <TH align="right" />
@@ -231,7 +235,7 @@ export default async function SalesPage({
             <TBody>
               {invoices.length === 0 ? (
                 <tr>
-                  <TD className="py-10 text-zinc-400" colSpan={10}>
+                  <TD className="py-10 text-zinc-400" colSpan={11}>
                     No invoices match these filters.
                   </TD>
                 </tr>
@@ -258,7 +262,9 @@ export default async function SalesPage({
                       ? "opacity-50 hover:opacity-70"
                       : stats.balance > 0
                         ? "bg-amber-50/40 hover:bg-amber-50/70"
-                        : "hover:bg-zinc-50",
+                        : stats.balance < 0
+                          ? "bg-rose-50/40 hover:bg-rose-50/70"
+                          : "hover:bg-zinc-50",
                   );
 
                   return (
@@ -295,7 +301,12 @@ export default async function SalesPage({
                         ) : null}
                       </TD>
                       <TD>
-                        <Badge tone={stats.tone}>{stats.statusLabel}</Badge>
+                        <div className="flex flex-wrap items-center gap-1">
+                          <Badge tone={stats.tone}>{stats.statusLabel}</Badge>
+                          {inv.isPreOrder ? (
+                            <Badge tone="info">Pre-order</Badge>
+                          ) : null}
+                        </div>
                       </TD>
                       <TD align="right" className="whitespace-nowrap font-medium">
                         {formatLkr(stats.revenue)}
@@ -303,10 +314,21 @@ export default async function SalesPage({
                       <TD align="right" className="whitespace-nowrap text-zinc-600">
                         {formatLkr(stats.paid)}
                       </TD>
+                      <TD align="right" className="whitespace-nowrap text-zinc-600">
+                        {stats.refunded > 0 ? (
+                          formatLkr(stats.refunded)
+                        ) : (
+                          <span className="text-zinc-400">—</span>
+                        )}
+                      </TD>
                       <TD align="right" className="whitespace-nowrap">
                         {stats.balance > 0 ? (
                           <span className="font-medium text-amber-700">
                             {formatLkr(stats.balance)}
+                          </span>
+                        ) : stats.balance < 0 ? (
+                          <span className="font-medium text-rose-700">
+                            Refund due {formatLkr(Math.abs(stats.balance))}
                           </span>
                         ) : (
                           <span className="text-zinc-400">—</span>
@@ -344,22 +366,29 @@ export default async function SalesPage({
                               </Link>
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              asChild
+                            <ConfirmActionForm
+                              action={voidInvoice}
+                              fields={{ invoiceNo: inv.invoiceNo }}
+                              title={`Void ${inv.invoiceNo}?`}
+                              description={
+                                stats.paid > stats.refunded
+                                  ? `This invoice still has ${formatLkr(stats.paid - stats.refunded)} collected. Record a refund on the Returns tab before voiding, or cancel will be blocked.`
+                                  : "This keeps the invoice number and history, releases stock, and removes this sale from revenue."
+                              }
+                              confirmLabel="Confirm void"
+                              successMessage="Invoice voided"
                               disabled={inv.status === "CANCELLED"}
-                            >
-                              <form action={voidInvoice} className="w-full">
-                                <input type="hidden" name="invoiceNo" value={inv.invoiceNo} />
+                              trigger={
                                 <button
-                                  type="submit"
+                                  type="button"
                                   disabled={inv.status === "CANCELLED"}
-                                  className="flex w-full items-center gap-2 text-left text-red-700 disabled:text-zinc-400"
+                                  className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm text-red-700 outline-none hover:bg-zinc-100 disabled:pointer-events-none disabled:text-zinc-400"
                                 >
                                   <Ban className="h-4 w-4" />
                                   Void invoice
                                 </button>
-                              </form>
-                            </DropdownMenuItem>
+                              }
+                            />
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TD>
